@@ -52,8 +52,8 @@
   /* Text that sits directly on the sky */
   --on-sky: #ffffff;
   --on-sky-2: rgba(255, 255, 255, 0.86);
-  --on-sky-muted: rgba(255, 255, 255, 0.66);
-  --sky-text-shadow: 0 1px 14px rgba(0, 0, 0, 0.35);
+  --on-sky-muted: rgba(255, 255, 255, 0.74);
+  --sky-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 14px rgba(0, 0, 0, 0.38);
   --shadow: 0 14px 40px rgba(0, 0, 0, 0.32);
   /* Scenario colors (validated for colorblind separation; see README) */
   --s1: #36a980; --s2: #4c88d3; --s3: #c7852a; --s4: #8d6cc2; --s5: #cb6e60; --s6: #3fa3c0;
@@ -104,8 +104,8 @@
     --bad: #b5302a;
     --bad-soft: rgba(181, 48, 42, 0.11);
     --track: rgba(12, 18, 34, 0.12);
-    --on-sky-muted: rgba(255, 255, 255, 0.8);
-    --sky-text-shadow: 0 1px 12px rgba(10, 30, 70, 0.45);
+    --on-sky-2: #ffffff; --on-sky-muted: rgba(255, 255, 255, 0.92);
+    --sky-text-shadow: 0 1px 2px rgba(10, 30, 70, 0.3), 0 1px 12px rgba(10, 30, 70, 0.5);
     --shadow: 0 12px 34px rgba(16, 40, 90, 0.16);
     --s1: #1a8a64; --s2: #3a72bd; --s3: #a86a12; --s4: #7a58b3; --s5: #b5513f; --s6: #1683a6;
   }
@@ -119,7 +119,7 @@
   --card: #ffffff; --card-2: #f3f5fa; --card-3: #e9edf5;
   --accent: #a8560a; --accent-fill: linear-gradient(180deg, #ffbe6a, #f59a3c); --accent-soft: rgba(214, 120, 20, 0.13); --accent-glow: rgba(245, 154, 60, 0.45);
   --pos: #0e7a53; --pos-soft: rgba(14, 122, 83, 0.12); --warn: #bf4630; --warn-soft: rgba(191, 70, 48, 0.11); --bad: #b5302a; --bad-soft: rgba(181, 48, 42, 0.11);
-  --track: rgba(12, 18, 34, 0.12); --on-sky-muted: rgba(255, 255, 255, 0.8); --sky-text-shadow: 0 1px 12px rgba(10, 30, 70, 0.45); --shadow: 0 12px 34px rgba(16, 40, 90, 0.16);
+  --track: rgba(12, 18, 34, 0.12); --on-sky-2: #ffffff; --on-sky-muted: rgba(255, 255, 255, 0.92); --sky-text-shadow: 0 1px 2px rgba(10, 30, 70, 0.3), 0 1px 12px rgba(10, 30, 70, 0.5); --shadow: 0 12px 34px rgba(16, 40, 90, 0.16);
   --s1: #1a8a64; --s2: #3a72bd; --s3: #a86a12; --s4: #7a58b3; --s5: #b5513f; --s6: #1683a6;
 }
 
@@ -135,7 +135,7 @@
 @supports (height: 1svh) { .sky { --hz-y: clamp(300px, 43svh, 470px); } }
 .sky-air {
   position: absolute; left: 0; right: 0; top: 0; height: var(--hz-y); overflow: hidden;
-  background: linear-gradient(to bottom, var(--sky-top, #03040b) 0%, var(--sky-mid, #070a1c) 40%, var(--sky-low, #0e1236) 76%, var(--sky-hz, #1a1e4a) 100%);
+  background: linear-gradient(to bottom, var(--sky-top, #03040b) 0%, var(--sky-mid, #070a1c) 45%, var(--sky-low, #0e1236) 84%, var(--sky-hz, #1a1e4a) 100%);
 }
 .sky-stars {
   position: absolute; inset: 0; opacity: var(--stars, 1);
@@ -147,7 +147,7 @@
 .sky-stars .star:nth-child(3) { animation-duration: 12s; animation-delay: -6s; }
 @keyframes twinkle { 0% { opacity: 1; } 50% { opacity: 0.45; } 100% { opacity: 0.9; } }
 .sky-glow {
-  position: absolute; left: var(--sun-x); top: var(--hz-y); width: 170vmax; height: 110vmax;
+  position: absolute; left: var(--sun-x); top: var(--hz-y); width: 130vmax; height: 70vmax;
   transform: translate(-50%, -50%) translateY(calc(var(--sun-lift, 0) * var(--rise) * -0.35));
   background: radial-gradient(closest-side, var(--sky-glow, transparent), transparent 72%);
 }
@@ -155,7 +155,7 @@
   position: absolute; left: var(--sun-x); top: var(--hz-y); width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%;
   transform: translate3d(0, calc(var(--sun-lift, -1) * var(--rise) * -1), 0);
   background: radial-gradient(circle, #fffaf0 0%, #fff1d6 34%, var(--sun-core, #ffb366) 62%, transparent 72%);
-  box-shadow: 0 0 46px 14px var(--sun-halo, transparent), 0 0 140px 50px var(--sun-halo, transparent);
+  box-shadow: 0 0 40px 12px var(--sun-halo, transparent), 0 0 110px 28px var(--sun-halo, transparent);
 }
 .sky-sea {
   position: absolute; left: 0; right: 0; top: var(--hz-y); bottom: 0; overflow: hidden;
@@ -274,7 +274,7 @@ svg { display: block; }
 }
 .section-label {
   font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin: 30px 8px 10px;
-  color: var(--on-sky-muted); text-shadow: var(--sky-text-shadow);
+  color: var(--on-sky-2); text-shadow: var(--sky-text-shadow);
 }
 
 /* Floating glass tab bar (the fixed element itself is the glass, so the
@@ -513,7 +513,7 @@ body.locked .app, body.locked .tabbar { visibility: hidden; }
 /* ---------------------------------------------------- 6. Screens */
 /* Home: the hero sits right on the sky */
 .hero-sky { padding: 18px 6px 4px; color: var(--on-sky); text-shadow: var(--sky-text-shadow); }
-.hero-label { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 500; color: var(--on-sky-2); }
+.hero-label { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 500; color: var(--on-sky-2); }
 .hero-label .tip { color: var(--on-sky-muted); }
 .hero-num {
   font-family: var(--font-display); font-weight: 100; font-size: clamp(104px, 33vw, 140px); line-height: 0.92;
@@ -521,7 +521,7 @@ body.locked .app, body.locked .tabbar { visibility: hidden; }
   text-shadow: 0 2px 40px rgba(0, 0, 0, 0.22);
 }
 .hero-togo { font-size: 20px; font-weight: 400; letter-spacing: -0.01em; margin-top: 8px; color: var(--on-sky); font-variant-numeric: tabular-nums; }
-.hero-meta { font-size: 14px; color: var(--on-sky-muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.hero-meta { font-size: 14px; color: var(--on-sky-2); margin-top: 3px; font-variant-numeric: tabular-nums; }
 .busy-dot { display: inline-block; width: 6px; height: 6px; border-radius: 3px; background: var(--accent); margin-left: 4px; opacity: 0; transition: opacity .2s; box-shadow: 0 0 8px var(--accent-glow); }
 .busy .busy-dot { opacity: 1; animation: pulse 1s infinite; }
 @keyframes pulse { 50% { opacity: .25; } }
@@ -661,7 +661,7 @@ body.locked .app, body.locked .tabbar { visibility: hidden; }
 .dots { display: flex; justify-content: center; gap: 7px; margin: 14px 0 4px; }
 .dots button { width: 7px; height: 7px; border-radius: 4px; background: var(--on-sky); opacity: .35; transition: width .3s var(--ease-spring), opacity .2s; padding: 0; }
 .dots button.on { width: 22px; opacity: .95; box-shadow: 0 0 8px rgba(255, 255, 255, 0.4); }
-.chart-hint { text-align: center; color: var(--on-sky-muted); font-size: 12.5px; margin: 8px 0 0; text-shadow: var(--sky-text-shadow); }
+.chart-hint { text-align: center; color: var(--on-sky); font-size: 12.5px; margin: 8px 0 0; text-shadow: var(--sky-text-shadow); }
 /* Tables scroll sideways under a pinned first column, so their card is solid */
 .table-card { padding: 4px 0; overflow: hidden; background: var(--card); }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }

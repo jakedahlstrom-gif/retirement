@@ -30,15 +30,15 @@
     [0.25, { top: '#04061a', mid: '#0b1032', low: '#1c2156', hz: '#3a3474', glow: '#6c4aa8', glowA: 0.24, seaTop: '#12163a', seaBot: '#03040c', sun: '#ff9a5a', halo: '#ff8048', lift: -0.62, stars: 0.8, reflect: 0.04 }],
     [0.42, { top: '#060920', mid: '#121747', low: '#33296a', hz: '#a35a72', glow: '#ff7f6a', glowA: 0.32, seaTop: '#241d46', seaBot: '#04050e', sun: '#ffa060', halo: '#ff8a4c', lift: -0.18, stars: 0.42, reflect: 0.22 }],
     [0.50, { top: '#070a24', mid: '#151a4e', low: '#40306e', hz: '#cf7262', glow: '#ff8f66', glowA: 0.40, seaTop: '#2e2248', seaBot: '#04050f', sun: '#ffac66', halo: '#ff9452', lift: 0, stars: 0.26, reflect: 0.42 }],
-    [0.68, { top: '#090e2b', mid: '#1b2256', low: '#563a72', hz: '#ef8a5c', glow: '#ffa066', glowA: 0.46, seaTop: '#3a2a4c', seaBot: '#05060f', sun: '#ffbb70', halo: '#ffa058', lift: 0.26, stars: 0.06, reflect: 0.7 }],
-    [0.85, { top: '#0b1231', mid: '#212c62', low: '#704874', hz: '#ffa25a', glow: '#ffae62', glowA: 0.5, seaTop: '#48324c', seaBot: '#06070f', sun: '#ffc477', halo: '#ffac5c', lift: 0.44, stars: 0, reflect: 0.86 }],
-    [1.00, { top: '#0d1534', mid: '#28346c', low: '#86526e', hz: '#ffb257', glow: '#ffb85e', glowA: 0.56, seaTop: '#573a48', seaBot: '#07070f', sun: '#ffcf80', halo: '#ffb35e', lift: 0.58, stars: 0, reflect: 1 }],
+    [0.68, { top: '#090e2b', mid: '#1b2256', low: '#563a72', hz: '#ef8a5c', glow: '#ffa066', glowA: 0.46, seaTop: '#3a2a4c', seaBot: '#05060f', sun: '#ffbb70', halo: '#ffa058', lift: 0.18, stars: 0.06, reflect: 0.7 }],
+    [0.85, { top: '#0b1231', mid: '#212c62', low: '#5e4170', hz: '#ffa25a', glow: '#ffae62', glowA: 0.42, seaTop: '#48324c', seaBot: '#06070f', sun: '#ffc477', halo: '#ffac5c', lift: 0.3, stars: 0, reflect: 0.86 }],
+    [1.00, { top: '#0d1534', mid: '#28346c', low: '#6a4568', hz: '#ffb257', glow: '#ffb85e', glowA: 0.44, seaTop: '#573a48', seaBot: '#07070f', sun: '#ffcf80', halo: '#ffb35e', lift: 0.4, stars: 0, reflect: 1 }],
   ];
   // Light mode: a daytime sky. Still deep enough at the top for white text.
   const LIGHT = [
-    [0.00, { top: '#203f78', mid: '#3d62a2', low: '#7f98c6', hz: '#d8c4d4', glow: '#ffd9c4', glowA: 0.34, seaTop: '#6b86b2', seaBot: '#1d3462', sun: '#fff1dc', halo: '#ffd2a8', lift: 0.06, stars: 0, reflect: 0.35 }],
-    [0.50, { top: '#1b4f96', mid: '#3a78bf', low: '#86b6e2', hz: '#d9e9f5', glow: '#fff3da', glowA: 0.42, seaTop: '#4f8cc2', seaBot: '#173f72', sun: '#fffaf0', halo: '#ffe6bd', lift: 0.32, stars: 0, reflect: 0.6 }],
-    [1.00, { top: '#22508f', mid: '#4a7dbd', low: '#d2ad8e', hz: '#ffd49a', glow: '#ffc778', glowA: 0.58, seaTop: '#b98a70', seaBot: '#253f6a', sun: '#ffe7b8', halo: '#ffbf6a', lift: 0.56, stars: 0, reflect: 0.95 }],
+    [0.00, { top: '#1c3970', mid: '#2f5596', low: '#4a68a6', hz: '#d8c4d4', glow: '#ffd9c4', glowA: 0.2, seaTop: '#3d5a8c', seaBot: '#16294f', sun: '#fff1dc', halo: '#ffd2a8', lift: 0.06, stars: 0, reflect: 0.3 }],
+    [0.50, { top: '#174789', mid: '#28609f', low: '#3669a8', hz: '#d9e9f5', glow: '#fff3da', glowA: 0.22, seaTop: '#285a8e', seaBot: '#14365f', sun: '#fffaf0', halo: '#ffe6bd', lift: 0.22, stars: 0, reflect: 0.45 }],
+    [1.00, { top: '#1f4683', mid: '#335d97', low: '#615b8a', hz: '#ffd49a', glow: '#ffc778', glowA: 0.3, seaTop: '#6a5468', seaBot: '#1f3459', sun: '#ffe7b8', halo: '#ffbf6a', lift: 0.4, stars: 0, reflect: 0.6 }],
   ];
   const COLOR_KEYS = ['top', 'mid', 'low', 'hz', 'glow', 'seaTop', 'seaBot', 'sun', 'halo'];
   const NUM_KEYS = ['glowA', 'lift', 'stars', 'reflect'];
@@ -113,7 +113,7 @@
   function layoutSun() {
     if (!el) return;
     const w = window.innerWidth;
-    el.style.setProperty('--sun-x', Math.round(Math.min(w * 0.74, w / 2 + 210)) + 'px');
+    el.style.setProperty('--sun-x', Math.round(Math.min(w * 0.84, w / 2 + 230)) + 'px');
   }
 
   function paint(p) {
