@@ -190,7 +190,12 @@
     const p50 = rows.map((r) => r.startTotal);
     const b = a.mc && a.mc.bands;
     const shift = (arr) => (arr ? [rows[0].startTotal, ...arr.slice(0, -1)] : undefined);
-    return { years, p50, p10: b ? shift(b.p10) : undefined, p90: b ? shift(b.p90) : undefined, retireYear: a.schedule.retireYear, retireLabel: 'Retire ' + a.schedule.retireYear };
+    return {
+      years, p50, p10: b ? shift(b.p10) : undefined, p90: b ? shift(b.p90) : undefined,
+      retireYear: a.schedule.retireYear, retireLabel: 'Retire ' + a.schedule.retireYear,
+      // Same wording and year as the "Money runs short" alert
+      runOutLabel: a.summary.shortfallYear ? 'Runs short ' + a.summary.shortfallYear : undefined,
+    };
   }
   function showDefaultReadout() {
     const a = Home._a;
@@ -206,7 +211,7 @@
     const P = a.plan;
     els.projLabel.textContent = `Jan 1, ${info.year} · ${P.people.p1.name} ${info.year - P.people.p1.birthYear - 1}`;
     els.balRet.textContent = fmt.money(info.p50);
-    els.balRetSub.textContent = info.p10 != null && info.p90 != null ? `${fmt.money(info.p10)}–${fmt.money(info.p90)}` : '';
+    els.balRetSub.textContent = info.p10 != null && info.p90 != null && info.p10 !== info.p90 ? `${fmt.money(info.p10)}–${fmt.money(info.p90)}` : '';
   }
 
   /** New analysis results arrived. */
