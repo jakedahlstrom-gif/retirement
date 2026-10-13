@@ -4,23 +4,29 @@
   <meta charset="utf-8">
   <!-- viewport-fit=cover lets the app use the full screen around the notch and home bar -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Retirement Planner</title>
+  <title>Horizon</title>
   <meta name="description" content="A private retirement planner that runs entirely on your phone.">
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-  <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+  <!-- Matches the pre-dawn sky; js/ui/sky.js keeps it in step with the sky as it changes -->
+  <meta name="theme-color" content="#070a1c">
+  <meta name="color-scheme" content="dark light">
   <!-- Installable web app: opens full screen from the home screen -->
-  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
+  <!-- Content runs under the status bar, so the sky shows through it -->
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Retire">
+  <meta name="apple-mobile-web-app-title" content="Horizon">
+  <meta name="application-name" content="Horizon">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <!-- Privacy: this page never loads anything from other sites and sends no data anywhere. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+  <!-- The sky (js/ui/sky.js) is drawn behind everything; the app floats over it -->
   <!-- The whole app is drawn into this element by js/app/app.js -->
   <div id="app" class="app"></div>
   <noscript><p style="padding:24px">This app needs JavaScript turned on.</p></noscript>
@@ -46,6 +52,7 @@
   <script src="js/ui/core.js"></script>
   <script src="js/ui/tips.js"></script>
   <script src="js/ui/controls.js"></script>
+  <script src="js/ui/sky.js"></script>
   <script src="js/app/store.js"></script>
   <script src="js/app/engine-client.js"></script>
   <script src="js/app/pin.js"></script>
@@ -53,6 +60,7 @@
   <script src="js/ui/plan-fields.js"></script>
   <script src="js/ui/plan.js"></script>
   <script src="js/ui/scenarios.js"></script>
+  <script src="js/ui/projection.js"></script>
   <script src="js/ui/home.js"></script>
   <script src="js/ui/charts.js"></script>
   <script src="js/ui/compare.js"></script>

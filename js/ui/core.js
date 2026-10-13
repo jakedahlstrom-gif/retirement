@@ -125,10 +125,13 @@
   // --- Motion ------------------------------------------------------------------
   UI.reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /** Animate a number shown in `el` from its last value to `to`. */
-  UI.countTo = function (el, to, format, ms) {
+  /**
+   * Animate a number shown in `el` from its last value to `to`. The first time
+   * a number appears it shows instantly, unless `start` is given (count up).
+   */
+  UI.countTo = function (el, to, format, ms, start) {
     if (!el) return;
-    const from = el._val == null ? to : el._val;
+    const from = el._val == null ? (start != null ? start : to) : el._val;
     el._val = to;
     if (el._raf) cancelAnimationFrame(el._raf);
     if (UI.reducedMotion() || from === to || !isFinite(from) || !isFinite(to)) { el.textContent = format(to); return; }

@@ -51,11 +51,12 @@
         if (k === 'del') return h('button.key.ghost', { 'aria-label': 'Delete', onclick: () => press('del') }, 'Delete');
         return h('button.key', { onclick: () => press(k) }, k);
       }));
-      const logo = h('div', { html: '<svg class="lock-logo" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--accent-soft)" stroke-width="5"/><path d="M32 6 A26 26 0 1 1 9.5 45" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/></svg>' });
+      const logo = h('div', { html: '<svg class="lock-logo" viewBox="0 0 64 64" aria-hidden="true"><defs><radialGradient id="lkSun" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff6e4"/><stop offset=".55" stop-color="#ffc677"/><stop offset="1" stop-color="#ff9a48"/></radialGradient><clipPath id="lkSky"><path d="M0 0H64V44C46 42 30 38 0 46Z"/></clipPath></defs><circle cx="32" cy="40" r="15" fill="url(#lkSun)" clip-path="url(#lkSky)"/><path d="M4 46C24 40 40 41 60 34" fill="none" stroke="#ffd9a6" stroke-width="2.5" stroke-linecap="round"/><path d="M28 50h8M26.5 54.5h11M30 59h4" stroke="#ffc677" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg>' });
       const el = h('div.lock', logo, h('h2', title), h('p', text), dots, pad, extra || null);
       const old = document.querySelector('.lock');
       if (old) old.remove();
       document.body.appendChild(el);
+      document.body.classList.add('locked');
       PIN._el = el;
       // Physical keyboard support
       const onKey = (e) => {
@@ -66,7 +67,7 @@
       window.addEventListener('keydown', onKey);
     });
   }
-  function closeLock() { if (PIN._el) { PIN._el.remove(); PIN._el = null; } }
+  function closeLock() { if (PIN._el) { PIN._el.remove(); PIN._el = null; } document.body.classList.remove('locked'); }
 
   /** Ask for the PIN until it's right. */
   async function unlockLoop() {

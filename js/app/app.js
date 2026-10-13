@@ -1,6 +1,6 @@
 /*
  * app.js — starts the app and keeps everything in sync:
- *   - loads your saved plan (or the sample), asks for the PIN
+ *   - loads your saved plan (or the sample), raises the sky, asks for the PIN
  *   - switches between the five tabs
  *   - whenever an input changes: refreshes the screen right away, then asks
  *     the background worker for new results and animates them in
@@ -147,6 +147,7 @@
   // ------------------------------------------------------------------- boot
   App.start = async function () {
     store.load();
+    UI.sky.mount();
     buildShell();
     UI.home.build(views.home);
     paintPill();

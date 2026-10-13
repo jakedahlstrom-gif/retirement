@@ -174,7 +174,7 @@
   // ------------------------------------------------------------------ charts
   function markersFor(a) {
     const S = a.schedule, P = a.plan;
-    const m = [{ x: S.retireYear, label: 'Retire', color: C.css('--fg-2'), row: 0 }];
+    const m = [{ x: S.retireYear, label: 'Retire', color: C.css('--accent'), row: 0 }];
     const u1 = S.unlock.p1, u2 = S.unlock.p2;
     const unlock1 = u1.rule55Year != null ? Math.min(u1.rule55Year, u1.year59) : u1.year59;
     m.push({ x: unlock1, label: `${P.people.p1.name} 401k`, color: C.css('--faint'), row: 1 });

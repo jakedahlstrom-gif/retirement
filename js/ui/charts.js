@@ -1,9 +1,10 @@
 /*
  * charts.js — chart styling and the eight Compare charts (built on Chart.js).
  *
- * Style rules: thin 2px smooth lines, soft gradient fills, hairline horizontal
- * gridlines only, few axis labels, rounded bar tops, a floating tooltip and a
- * crosshair on tap. Each scenario keeps its color everywhere. Charts with 2+
+ * Style rules (Horizon): smooth lines with a soft glow, gradient fills that
+ * fade to transparent, no gridlines, few axis labels, rounded bar tops, a
+ * floating glass tooltip, a crosshair on tap, and a small sun at the
+ * retirement point. Each scenario keeps its color everywhere. Charts with 2+
  * scenarios always have a legend, so color is never the only clue.
  */
 (function (RP) {
@@ -37,7 +38,7 @@
     D.animation.easing = 'easeOutQuart';
     D.maintainAspectRatio = false;
     D.plugins.legend.display = false;
-    D.elements.line.borderWidth = 2;
+    D.elements.line.borderWidth = 2.25;
     D.elements.line.tension = 0.35;
     D.elements.line.borderCapStyle = 'round';
     D.elements.line.borderJoinStyle = 'round';
@@ -47,12 +48,12 @@
     D.elements.point.hoverBorderWidth = 2;
     D.elements.bar.borderRadius = 4;
     const tt = D.plugins.tooltip;
-    tt.backgroundColor = C.css('--card-3');
+    tt.backgroundColor = C.alpha(C.css('--card-3'), 0.94);
     tt.titleColor = C.css('--fg');
     tt.bodyColor = C.css('--fg-2');
     tt.borderColor = C.css('--line-strong');
-    tt.borderWidth = 0.5;
-    tt.cornerRadius = 12;
+    tt.borderWidth = 1;
+    tt.cornerRadius = 14;
     tt.padding = 10;
     tt.boxPadding = 5;
     tt.usePointStyle = true;
@@ -108,6 +109,20 @@
         }
         ctx.restore();
       }
+      // The sun: a small glowing dot at the retirement point
+      if (opts.sun) {
+        const x = chart.scales.x.getPixelForValue(opts.sun.x), y = chart.scales.y.getPixelForValue(opts.sun.y);
+        if (isFinite(x) && isFinite(y) && y >= a.top - 2 && y <= a.bottom + 2) {
+          const amber = C.css('--accent');
+          ctx.save();
+          const g = ctx.createRadialGradient(x, y, 0, x, y, 16);
+          g.addColorStop(0, C.alpha(amber, 0.55)); g.addColorStop(1, C.alpha(amber, 0));
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fff6e6'; ctx.shadowColor = amber; ctx.shadowBlur = 10;
+          ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+      }
       // Horizontal reference lines (income limits, targets)
       for (const r of opts.refLines || []) {
         const y = chart.scales.y.getPixelForValue(r.y);
@@ -162,7 +177,22 @@
     },
   };
 
-  if (window.Chart) Chart.register(overlay, endLabels);
+  /** A soft glow under every line (not bands, dashed guides or bars). */
+  const glow = {
+    id: 'rpGlow',
+    beforeDatasetDraw(chart, args) {
+      const ds = args.meta && args.meta.dataset ? chart.data.datasets[args.index] : null;
+      const type = ds && (ds.type || chart.config.type);
+      if (!ds || type !== 'line' || ds.borderDash || !(ds.borderWidth == null || ds.borderWidth >= 1.5) || typeof ds.borderColor !== 'string') return;
+      chart.ctx.save();
+      chart.ctx.shadowColor = C.alpha(ds.borderColor, 0.55);
+      chart.ctx.shadowBlur = 10;
+      args.meta._rpGlow = true;
+    },
+    afterDatasetDraw(chart, args) { if (args.meta._rpGlow) { args.meta._rpGlow = false; chart.ctx.restore(); } },
+  };
+
+  if (window.Chart) Chart.register(overlay, endLabels, glow);
 
   const moneyTick = (v) => fmt.money(v);
   function baseOptions(o) {
@@ -173,14 +203,14 @@
       layout: { padding: { top: 6, right: 6, left: 0, bottom: 0 } },
       scales: {
         x: {
-          type: o.xType || 'linear', grid: { display: false }, border: { color: C.css('--line-strong') },
+          type: o.xType || 'linear', grid: { display: false }, border: { color: C.css('--line') },
           ticks: { maxTicksLimit: o.xTicks || 6, maxRotation: 0, includeBounds: o.xType === 'category', callback: o.xFmt || ((v) => (Number.isInteger(v) ? String(v) : '')), color: C.css('--muted') },
           min: o.xMin, max: o.xMax, stacked: !!o.stacked, offset: !!o.offsetX,
         },
         y: {
           beginAtZero: o.beginAtZero !== false, stacked: !!o.stacked,
-          grid: { color: C.css('--line'), drawTicks: false }, border: { display: false },
-          ticks: { maxTicksLimit: 5, padding: 6, callback: o.yFmt || moneyTick, color: C.css('--muted') },
+          grid: { display: false, drawTicks: false }, border: { display: false },
+          ticks: { maxTicksLimit: 4, padding: 6, callback: o.yFmt || moneyTick, color: C.css('--muted') },
           min: o.yMin, max: o.yMax,
         },
       },
@@ -193,7 +223,7 @@
           filter: (it) => !it.dataset.noTooltip,
           itemSort: (p, q) => q.parsed.y - p.parsed.y,
         },
-        rpOverlay: { markers: o.markers || [], refLines: o.refLines || [] },
+        rpOverlay: { markers: o.markers || [], refLines: o.refLines || [], sun: o.sun || null },
         rpEndLabels: { enabled: !!o.endLabels },
       },
       onClick: o.onClick,
@@ -233,17 +263,20 @@
     const years = f.a.schedule.years;
     if (f.a.mc && f.a.mc.bands) {
       const col = C.scenarioColor(f.sc.color);
-      datasets.push({ label: '90th percentile', clip: 4, data: f.a.mc.bands.p90.map((v, i) => ({ x: years[i], y: v })), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: (c) => gradient(c.chart, col, 0.22, 0.03), noTooltip: false, order: 10 });
+      datasets.push({ label: '90th percentile', clip: 4, data: f.a.mc.bands.p90.map((v, i) => ({ x: years[i], y: v })), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: (c) => gradient(c.chart, col, 0.16, 0.05), noTooltip: false, order: 10 });
       datasets.push({ label: '10th percentile', data: f.a.mc.bands.p10.map((v, i) => ({ x: years[i], y: v })), borderWidth: 0, pointRadius: 0, fill: false, order: 11 });
     }
     for (const { sc, a } of inp.series) {
       const col = C.scenarioColor(sc.color);
       const med = a.mc && a.mc.bands ? a.mc.bands.p50 : a.rows.map((r) => r.balances.total);
-      datasets.push({ label: sc.name, endLabel: inp.series.length > 1 ? short(sc.name) : null, data: med.map((v, i) => ({ x: a.schedule.years[i], y: v })), borderColor: col, backgroundColor: col, pointBackgroundColor: col, pointBorderColor: C.css('--card'), fill: false, order: 1 });
+      const solo = inp.series.length === 1;
+      datasets.push({ label: sc.name, endLabel: inp.series.length > 1 ? short(sc.name) : null, data: med.map((v, i) => ({ x: a.schedule.years[i], y: v })), borderColor: col, backgroundColor: solo ? (c) => gradient(c.chart, col, 0.24, 0) : col, pointBackgroundColor: col, pointBorderColor: C.css('--card'), fill: solo ? 'origin' : false, order: 1 });
     }
+    const fMed = f.a.mc && f.a.mc.bands ? f.a.mc.bands.p50 : f.a.rows.map((r) => r.balances.total);
+    const ri = years.indexOf(f.a.schedule.retireYear);
     let maxMed = 0;
     for (const { a } of inp.series) for (const v of (a.mc && a.mc.bands ? a.mc.bands.p50 : a.rows.map((r) => r.balances.total))) maxMed = Math.max(maxMed, v);
-    const opts = baseOptions({ markers: inp.markers, onClick: inp.onClick, endLabels: true, xMin: years[0], xMax: years[years.length - 1], yMax: niceCeil(maxMed * 1.6) });
+    const opts = baseOptions({ markers: inp.markers, onClick: inp.onClick, endLabels: true, xMin: years[0], xMax: years[years.length - 1], yMax: niceCeil(maxMed * 1.6), sun: ri >= 0 ? { x: years[ri], y: fMed[ri] } : null });
     return { type: 'line', data: { datasets }, options: opts };
   };
   function niceCeil(v) {

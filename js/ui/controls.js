@@ -6,6 +6,7 @@
  *   segmented({ options, value, onChange })
  *   numberEditor({ value, min, max, step, format, onChange })  slider + field + steppers
  *   toast(text, actionLabel, action)
+ *   expand({ title, summary, body })        tap-to-expand card
  */
 (function (RP) {
   'use strict';
@@ -181,6 +182,28 @@
     toastEl.classList.add('show');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toastEl.classList.remove('show'), actionLabel ? 4500 : 2400);
+  };
+
+  // ---- Tap-to-expand card ------------------------------------------------------------
+  /**
+   * { title, summary, body, open, onToggle } → a glass card whose header
+   * toggles the body. card.setSummary(x) updates the one-line summary.
+   */
+  UI.expand = function ({ title, summary, body, open, onToggle }) {
+    const sum = h('div.eh-sum', summary || '');
+    const card = h('div.card.expand' + (open ? '.open' : ''));
+    const head = h('button.expand-head', { type: 'button', 'aria-expanded': String(!!open), onclick: () => {
+      const on = !card.classList.contains('open');
+      card.classList.toggle('open', on);
+      head.setAttribute('aria-expanded', String(on));
+      UI.haptic();
+      if (onToggle) onToggle(on);
+    } }, h('div.eh-text', h('div.eh-title', title), sum), UI.icon('chevron', 'chev'));
+    const inner = h('div.expand-inner', body);
+    UI.mount(card, head, h('div.expand-body', h('div', inner)));
+    card.setSummary = (x) => { if (x instanceof Node) UI.mount(sum, x); else sum.textContent = x == null ? '' : String(x); };
+    card.body = inner;
+    return card;
   };
 
   /** A labeled row with a value that opens an editor when tapped. */
