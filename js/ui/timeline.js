@@ -138,7 +138,7 @@
     }
     UI.mount(root,
       h('h1.large-title', 'Timeline'),
-      h('div', { style: { margin: '-6px 4px 14px' } }, h('span.pill', { style: { color: `var(--s${sc.color})` } }, sc.name)),
+      h('div', { style: { margin: '-6px 4px 14px' } }, h('span.pill.sky-pill', h('span.dot', { style: { background: `var(--s${sc.color})` } }), sc.name)),
       phaseBar(a),
       ladder(a),
       h('div.card', { style: { paddingLeft: '12px', paddingRight: '14px' } }, list),

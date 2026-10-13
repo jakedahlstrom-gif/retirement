@@ -262,11 +262,12 @@ svg { display: block; }
 .view.active { display: block; animation: viewIn .34s var(--ease-out); }
 @keyframes viewIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 /* A scenario tag sitting on the sky under a title */
-.large-title + div > .pill {
-  background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.18);
+.sky-pill {
+  color: var(--on-sky); background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.18);
   -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%);
-  padding: 4px 11px; filter: brightness(1.25);
+  padding: 4px 11px 4px 9px; text-shadow: var(--sky-text-shadow);
 }
+.sky-pill .dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 6px rgba(255, 255, 255, 0.35); }
 .large-title {
   font-family: var(--font-display); font-size: 36px; font-weight: 600; letter-spacing: -0.025em; margin: 10px 4px 18px;
   color: var(--on-sky); text-shadow: var(--sky-text-shadow);
@@ -424,6 +425,7 @@ select.textfield { -webkit-appearance: none; appearance: none; }
 .expand-head .eh-text { flex: 1; min-width: 0; }
 .expand-head .eh-title { font-size: 13px; color: var(--muted); font-weight: 500; }
 .expand-head .eh-sum { font-size: 15.5px; color: var(--fg); margin-top: 3px; line-height: 1.35; }
+.expand.open .eh-sum { display: none; }
 .expand-head .chev { width: 16px; height: 16px; color: var(--faint); flex: none; transition: transform .3s var(--ease-out); transform: rotate(90deg); }
 .expand.open .expand-head .chev { transform: rotate(-90deg); }
 .expand-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .32s var(--ease-out); }
