@@ -5,7 +5,7 @@
  * It only ever caches this app's files. It never sends your data anywhere.
  * When you update the app, bump VERSION so phones fetch the new files.
  */
-const VERSION = 'horizon-v5';
+const VERSION = 'horizon-v6';
 const FILES = [
   './', 'index.html', 'manifest.json', 'css/app.css',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/icon-maskable-512.png',

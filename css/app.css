@@ -208,7 +208,8 @@ body {
   min-height: 100dvh;
 }
 button, input, select, textarea { font: inherit; color: inherit; }
-button { cursor: pointer; border: 0; background: none; padding: 0; }
+/* Taps never trigger double-tap zoom (pinch zoom still works) */
+button { cursor: pointer; border: 0; background: none; padding: 0; touch-action: manipulation; }
 input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 svg { display: block; }
@@ -490,6 +491,9 @@ body.locked .app, body.locked .tabbar { visibility: hidden; }
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: calc(var(--safe-top) + 20px) 24px calc(var(--safe-bottom) + 20px);
   animation: viewIn .4s var(--ease-out);
+  /* Quick taps on (or between) the keys must not zoom the screen */
+  touch-action: manipulation;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
 .lock h2 { font-weight: 600; font-size: 24px; margin: 20px 0 6px; text-align: center; text-shadow: var(--sky-text-shadow); }
 .lock p { color: var(--on-sky-muted); margin: 0 0 28px; text-align: center; font-size: 15px; max-width: 300px; text-shadow: var(--sky-text-shadow); }
