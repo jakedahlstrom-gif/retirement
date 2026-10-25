@@ -78,7 +78,7 @@
     add(S.yEnd, 'End of plan', `${P.people[P.household.horizonPerson].name} turns ${P.household.horizonAge}. ${fmt.money(rows[rows.length - 1].balances.total)} left in a typical market.`, 'now', 'flag');
     return ev.filter((e) => e.year >= now && e.year <= S.yEnd).sort((x, y) => x.year - y.year || order(x) - order(y));
   };
-  const order = (e) => ({ now: 0, big: 1, gap: 2, milestone: 3, warn: 4, bad: 5, event: 6 }[e.kind] || 9);
+  const order = (e) => ({ now: 0, big: 1, gap: 2, milestone: 3, warn: 4, bad: 5, event: 6 }[e.kind] ?? 9);
 
   /** Horizontal phase bar: working → bridge (no SS) → Social Security. */
   function phaseBar(a) {

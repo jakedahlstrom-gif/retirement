@@ -73,6 +73,7 @@
       const today = new Date().toISOString().slice(0, 10);
       st.plan.balances.asOf = today;
       st.plan.meta.lastUpdated = today;
+      st.plan.meta.isSample = false; // your own balances now
       store().save();
       store().emit('plan');
       UI.sheet.open({ title: 'Check-in saved', body: h('p.tip-text', 'Recalculating your plan…') });
@@ -185,7 +186,9 @@
     ]);
     add('Taxes', [
       `2026 federal brackets and standard deduction (${fmt.money(P.tax.federal.std.mfj)} joint), the ${fmt.money(P.tax.federal.ctc)} child tax credit for kids under 17, long-term gains at 0/15/20%, and payroll taxes.`,
-      `Minnesota: 2026 brackets, ${fmt.money(P.tax.mn.std.mfj)} standard deduction, ${fmt.money(P.tax.mn.dependentExemption)} per dependent, the child credit, and the Social Security subtraction.`,
+      P.household.state === 'MN'
+        ? `Minnesota: 2026 brackets, ${fmt.money(P.tax.mn.std.mfj)} standard deduction, ${fmt.money(P.tax.mn.dependentExemption)} per dependent, the child credit, and the Social Security subtraction.`
+        : `State income tax: a flat ${P.household.stateTaxPct || 0}% on income above the federal standard deduction (Social Security not taxed). Minnesota’s health programs don’t apply.`,
       'Brackets are assumed to keep pace with inflation (flat in today’s dollars).',
       P.tax.futureRates.enabled ? `All rates ${P.tax.futureRates.increasePct}% higher from ${P.tax.futureRates.startYear}.` : null,
       'A spouse’s death switches to joint brackets for that year (and 2 more with dependent kids), then head of household or single.',

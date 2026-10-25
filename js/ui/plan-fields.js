@@ -34,7 +34,7 @@
   RP.PLAN_GROUPS = [
     {
       key: 'household', title: 'Household', icon: 'users',
-      sub: (P) => `${n1(P)} & ${n2(P)} · ${(P.kids || []).length} kid${(P.kids || []).length === 1 ? '' : 's'} · ${P.household.state}`,
+      sub: (P) => `${n1(P)} & ${n2(P)} · ${(P.kids || []).length} kid${(P.kids || []).length === 1 ? '' : 's'} · ${P.household.state === 'MN' ? 'MN' : 'Other state'}`,
       reset: [],
       fields: [
         { path: 'people.p1.name', label: 'Person 1 name', type: 'text' },
@@ -45,6 +45,8 @@
         { path: 'people.p2.birthMonth', label: (P) => `${n2(P)} birth month`, ...months, adv: true },
         { path: 'kids', label: 'Kids', type: 'kids' },
         { path: 'household.state', label: 'State', type: 'select', options: [{ value: 'MN', label: 'Minnesota' }, { value: 'other', label: 'Other' }] },
+        { path: 'household.stateTaxPct', label: 'State income tax rate', ...pct(0, 15, 0.1), show: (P) => P.household.state !== 'MN',
+          note: 'A flat rate on income above the federal standard deduction. Social Security isn’t taxed. Use 0% for a state with no income tax.' },
         { path: 'household.horizonPerson', label: 'Plan until whose age', ...person, tip: 'horizon', adv: true },
         { path: 'household.horizonAge', label: 'Plan until age', type: 'age', min: 80, max: 110, tip: 'horizon' },
         { path: 'household.kidsInHouseholdThroughAge', label: 'Kids count in household through age', type: 'age', min: 17, max: 26, tip: 'kidsHH', adv: true },

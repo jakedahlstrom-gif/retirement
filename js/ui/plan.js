@@ -60,22 +60,76 @@
 
     const groups = RP.PLAN_GROUPS.map((g) => renderGroup(g, P, sc, color));
 
+    const stt = st.settings;
     const tools = h('div',
       h('div.section-label', 'Tools'),
       h('div.list',
         UI.row({ label: 'Scenarios', value: `${st.scenarios.length}`, onClick: () => UI.scenarios && UI.scenarios.manage() }),
         UI.row({ label: 'Annual check-in', value: st.history.length ? 'Last ' + st.history[st.history.length - 1].date.slice(0, 7) : 'Start', onClick: () => UI.checkin && UI.checkin.start() }),
         UI.row({ label: 'Assumptions', value: 'Plain English', onClick: () => UI.assumptions && UI.assumptions.open() })),
+      h('div.section-label', 'Settings'),
+      h('div.list',
+        UI.row({ label: 'Appearance', value: THEMES.find((t) => t.value === (stt.theme || 'auto')).label, onClick: themeSheet }),
+        UI.row({ label: 'PIN lock', value: stt.pinHash ? 'On' : 'Off', onClick: () => RP.pin.settings() })),
       h('div.section-label', 'Data & privacy'),
       h('div.list',
+        UI.row({ label: 'Export backup', value: stt.lastBackup ? 'Last ' + fmt.date(stt.lastBackup) : '.json', onClick: () => RP.app.exportFile() }),
         UI.row({ label: 'Import plan file', value: '.json', onClick: () => RP.app.importFile() }),
-        UI.row({ label: 'Export backup', value: '.json', onClick: () => RP.app.exportFile() }),
-        UI.row({ label: 'PIN lock', value: st.settings.pinHash ? 'On' : 'Off', onClick: () => RP.pin.settings() }),
-        UI.row({ label: 'Reset everything to defaults', value: '', onClick: confirmResetAll })),
+        UI.row({ label: 'Year-by-year spreadsheet', value: '.csv', onClick: () => RP.app.exportCsv() }),
+        UI.row({ label: 'Set up a new plan', value: '', onClick: () => UI.setup.start() }),
+        UI.row({ label: 'Reset everything to the sample', value: '', onClick: confirmResetAll })),
       h('p.footer-note', 'Your plan is stored only on this device. Nothing is sent anywhere.'));
 
-    UI.mount(root, h('h1.large-title', 'Plan'), head, groups, tools);
+    // Search: type a few letters to find any input without opening groups.
+    const results = h('div', { hidden: !query.trim() });
+    const browse = h('div', { hidden: !!query.trim() }, groups, tools);
+    const search = h('input.textfield.plan-search', { type: 'search', placeholder: 'Search inputs, e.g. Roth', value: query, 'aria-label': 'Search inputs', autocomplete: 'off', enterkeyhint: 'search' });
+    search.addEventListener('input', () => {
+      query = search.value;
+      results.hidden = !query.trim(); browse.hidden = !results.hidden;
+      paintResults(results, P, sc, color);
+    });
+    paintResults(results, P, sc, color);
+
+    UI.mount(root, h('h1.large-title', 'Plan'), head, search, results, browse);
   };
+
+  // ---------------------------------------------------------------- search
+  let query = '';
+  /** Every visible input whose label, group or explanation has all the typed words. */
+  function paintResults(el, P, sc, color) {
+    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) { UI.mount(el); return; }
+    const sections = [];
+    for (const g of RP.PLAN_GROUPS) {
+      for (const f of g.fields) {
+        if (f.show && !f.show(P)) continue;
+        const tip = f.tip && RP.TIPS[f.tip];
+        const hay = [labelOf(f, P), g.title, tip ? tip.title : '', f.note || '', f.person ? P.people[f.person].name : ''].join(' ').toLowerCase();
+        if (!words.every((w) => hay.includes(w))) continue;
+        const title = g.title + (f.person && g.fields.filter((x) => x.person).length > 2 ? ' · ' + P.people[f.person].name : '');
+        let sec = sections[sections.length - 1];
+        if (!sec || sec.title !== title) sections.push(sec = { title, rows: [] });
+        sec.rows.push(fieldRow(f, P, sc, color));
+      }
+    }
+    UI.mount(el, sections.length
+      ? h('div.list', sections.map((s) => [h('div.subhead', s.title), s.rows]))
+      : h('div.card', h('p.muted', { style: { margin: 0 } }, `No inputs match “${query.trim()}”.`)));
+  }
+
+  // ---------------------------------------------------------------- appearance
+  const THEMES = [{ value: 'auto', label: 'Automatic' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }];
+  function themeSheet() {
+    UI.sheet.open({
+      title: 'Appearance',
+      body: [
+        UI.segmented({ options: THEMES, value: store().state.settings.theme || 'auto', onChange: (t) => { RP.app.setTheme(t); Plan.render(); } }),
+        h('p.tip-text.muted', { style: { marginTop: '14px', fontSize: '14px' } }, 'Automatic follows your phone’s light or dark setting. The sky keeps its time of day either way.'),
+      ],
+      actions: [{ label: 'Done', primary: true, onClick: () => UI.sheet.close() }],
+    });
+  }
 
   function renderGroup(g, P, sc, color) {
     const isOpen = open.has(g.key);
@@ -345,8 +399,8 @@
   }
   function confirmResetAll() {
     UI.sheet.open({
-      title: 'Reset everything?',
-      body: h('p.tip-text', 'This replaces your plan, scenarios and checklist with the sample household. Export a backup first if you might want it back.'),
+      title: 'Reset to the sample?',
+      body: h('p.tip-text', 'This replaces your plan, scenarios and checklist with the fictional sample household. Export a backup first if you might want it back.'),
       actions: [
         { label: 'Cancel', onClick: () => UI.sheet.close() },
         { label: 'Reset', primary: true, onClick: () => { store().resetAll(); UI.sheet.close(); UI.toast('Reset to sample', 'Undo', () => store().undo()); } },
@@ -362,6 +416,7 @@
     const f = g.fields.find((x) => x.path === path);
     open.add(g.key);
     if (f.adv) advanced.add(g.key);
+    query = '';
     RP.app.go('plan');
     Plan.render();
     setTimeout(() => Plan.edit(f), 250);

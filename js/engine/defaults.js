@@ -27,6 +27,7 @@
     ],
     household: {
       state: 'MN',
+      stateTaxPct: 0, // flat state income tax when state is 'other' (Minnesota has its own brackets)
       horizonPerson: 'p2',
       horizonAge: 95,
       kidsInHouseholdThroughAge: 22, // counted for health-program household size & tax dependents
