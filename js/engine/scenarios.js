@@ -24,7 +24,7 @@
   /** Preset list. Each `make(P)` returns overrides based on the current Baseline. */
   RP.SCENARIO_PRESETS = [
     { key: 'base', group: 'Main', name: (P) => `Retire at ${P.retirement.p1Age}`, make: () => ({}) },
-    { key: 'spend75', group: 'Main', name: (P) => `Retire at ${P.retirement.p1Age} at $75K`, make: () => ({ 'spending.retirement': 75000 }) },
+    { key: 'spend75', group: 'Main', name: (P) => `Retire at ${P.retirement.p1Age} at $${Math.round(P.spending.retirement / 1000)}K`, make: () => ({ 'spending.retirement': 75000 }) },
     {
       key: 'jobloss-re', group: 'Job loss', name: (P) => `Job loss ${P.jobLoss.p1.year} + re-employed`,
       make: () => ({ 'jobLoss.p1.enabled': true, 'jobLoss.p1.reemploy.enabled': true }),

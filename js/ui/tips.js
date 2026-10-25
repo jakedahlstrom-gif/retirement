@@ -8,6 +8,8 @@
     success: { title: 'Chance of success', text: 'We run your plan 1,000 times with different, random stock-market years. This is the share of those runs where your money lasts as long as you do, paying for all spending, taxes and penalties.', more: 'Above 90% is considered strong. It is an estimate based on your assumptions, not a promise.' },
     safeSpend: { title: 'Safe spending', text: 'The most you could spend each year in retirement (today’s dollars, before taxes) and still keep your chance of success at your target, 90% by default.' },
     countdown: { title: 'Countdown', text: 'Time until the first year neither of you works full time.' },
+    earliest: { title: 'Earliest retirement age', text: 'The youngest age the first person could retire and still reach your success target (90% by default, set in Plan › Simulation). Everything else stays the same; if you don’t retire together, the other person’s date moves by the same number of years.', more: 'Tap Use to move the slider there. It’s tested with 300 market histories, so treat it as an estimate within about a year.' },
+    levers: { title: 'What moves the needle', text: 'Each row changes one thing about your plan and reruns it on the same market histories, so you can see which choices matter most for your chance of success.' },
     retireAge: { title: 'Retirement age', text: 'You work through December 31 of the year you reach this age. Everything recalculates as you slide.' },
     together: { title: 'Retire together', text: 'When on, you both stop working in the same year. Turn it off to set a separate date for each of you.' },
     netWorth: { title: 'Net worth today', text: 'Everything you own today: retirement accounts, Roth, HSA, cash, brokerage, 529 savings and home equity.' },

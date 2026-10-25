@@ -191,8 +191,10 @@
     cur = UI.reducedMotion() ? null : 0;
     paint(cur == null ? target : cur);
     window.addEventListener('resize', UI.debounce(() => { layoutStars(); layoutSun(); }, 200));
-    const repaint = () => { paint(cur == null ? target : cur); settle(); };
-    if (window.matchMedia) window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', repaint);
+    if (window.matchMedia) window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', Sky.repaint);
     return el;
   };
+
+  /** Redraw at the current hour (after a light/dark switch). */
+  Sky.repaint = function () { paint(cur == null ? target : cur); settle(); };
 })(globalThis.RP = globalThis.RP || {});

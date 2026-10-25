@@ -1,10 +1,13 @@
 /*
  * engine-client.js — talks to the background worker.
  *
- * Two workers:
- *   fast — the main analysis (success %, year-by-year table). Newest request wins.
- *   slow — heavier searches (safe spending, green light, Coast FIRE). Restarted
- *          whenever inputs change, so it never wastes time on stale numbers.
+ * Workers:
+ *   fast   — the main analysis (success %, year-by-year table). Newest request wins.
+ *   slow   — heavier searches (safe spending, earliest retirement age, green
+ *            light, Coast FIRE). Restarted whenever inputs change, so it never
+ *            wastes time on stale numbers.
+ *   levers — "what moves the needle" (only while that card is open). Same rule.
+ * Compare and the check-in use their own named workers for the same jobs.
  * If workers aren't available (e.g. opening the file directly), the same code
  * runs on the page instead.
  */
@@ -51,12 +54,14 @@
               const out = {};
               for (const k of opts.which) {
                 if (k === 'safe') out.safe = E.safeSpending(plan, { runs: opts.runs });
+                if (k === 'earliest') out.earliest = E.earliestRetirement(plan, { runs: Math.min(opts.runs, 300) });
                 if (k === 'green') out.green = E.greenLight(plan, { runs: opts.runs });
                 if (k === 'coast') out.coast = E.coastFire(plan, { runs: opts.runs });
                 if (onPartial) onPartial(k, out[k]);
               }
               resolve(out);
             } else if (type === 'byAge') resolve(E.successByAge(plan, opts));
+            else if (type === 'levers') resolve(E.levers(plan, opts, onPartial));
           } catch (e) { reject(e); }
         }, 30);
         return;
@@ -101,5 +106,11 @@
     return run('ages', 'byAge', plan, opts || {});
   };
 
-  C.cancelSlow = () => { restart('slow'); restart('ages'); restart('cmp'); };
+  /** "What moves the needle": each lever's effect, reported one at a time. Newest request wins. */
+  C.levers = function (plan, onPartial, runs) {
+    restart('levers');
+    return run('levers', 'levers', plan, { runs: runs || 400 }, onPartial);
+  };
+
+  C.cancelSlow = () => { restart('slow'); restart('ages'); restart('cmp'); restart('levers'); };
 })(globalThis.RP = globalThis.RP || {});

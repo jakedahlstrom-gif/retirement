@@ -254,7 +254,8 @@
     const P = a.plan;
     const line = (label, v, opts) => (Math.abs(v) < 1 && !(opts && opts.always) ? null :
       h('div.row.sub', h('span.row-label', h('span.txt', label)), h('span.row-value' + (opts && opts.strong ? '.strong' : ''), fmt.money(v, { full: true }))));
-    const statusName = { employer: 'Employer coverage', mncare: 'MinnesotaCare', ma: 'Medical Assistance', aca: 'MNsure with subsidy', 'aca-full': 'MNsure, full price', medicare: 'Medicare' }[r.health.status] || r.health.status;
+    const inMN = P.household.state === 'MN' && !(P.housing.move.enabled && year >= P.housing.move.year);
+    const statusName = fmt.coverage(r.health.status);
     const inn = [
       line('Paychecks & severance', r.income.wages), line('Part-time work', r.income.partTime), line('Social Security', r.income.ss),
       line('Unemployment', r.income.ui), line('Disability benefit', r.income.disability), line('Windfalls', r.income.windfall),
@@ -265,7 +266,7 @@
     const out = [
       line('Everyday spending', r.spending.core), line('Daycare', r.spending.daycare), line('Extra health costs', r.spending.health),
       line('College', r.spending.college), line('Extras (cars, events…)', r.spending.extras), line('Mortgage change', r.spending.mortgageAdj),
-      line('Federal tax', r.taxes.federal), line('Minnesota tax', r.taxes.state), line('Payroll tax', r.taxes.fica), line('Penalties', r.taxes.penalty),
+      line('Federal tax', r.taxes.federal), line(inMN ? 'Minnesota tax' : 'State tax', r.taxes.state), line('Payroll tax', r.taxes.fica), line('Penalties', r.taxes.penalty),
       line('Saved to retirement accounts', r.saving.pre401k + r.saving.match + r.saving.hsa + r.saving.rothIra + r.saving.mega),
       line('Saved to brokerage', r.saving.taxable + r.saving.leftover),
     ];
@@ -315,6 +316,10 @@
           h('thead', h('tr', cols.map(([t]) => h('th', t)))),
           h('tbody', a.rows.map((r) => h('tr' + (r.year === a.schedule.retireYear ? '.hl' : ''), { onclick: () => Cmp.showYear(a, r.year, f) }, cols.map(([, fn]) => h('td', fn(r))))))))),
         h('p.tip-text.muted', { style: { fontSize: '13px' } }, 'Typical market path, today’s dollars. Tap a year for details.')],
+      actions: [
+        { label: 'Export .csv', onClick: () => RP.app.exportCsv(a, f.name) },
+        { label: 'Done', primary: true, onClick: () => UI.sheet.close() },
+      ],
     });
   }
 
@@ -353,20 +358,15 @@
     ctx.font = `${11 * scale}px ${C.css('--font')}`;
     ctx.fillText('Educational estimate, not financial advice · ' + new Date().toLocaleDateString(), pad, H - pad / 1.5);
     const blob = await new Promise((res) => cv.toBlob(res, 'image/png'));
-    const name = `${key}-${new Date().toISOString().slice(0, 10)}.png`;
-    try {
-      const file = new File([blob], name, { type: 'image/png' });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: card.title }); return; }
-    } catch (e) { if (e && e.name === 'AbortError') return; }
-    const url = URL.createObjectURL(blob);
-    const a = h('a', { href: url, download: name }); document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-    UI.toast('Snapshot saved');
+    const how = await RP.app.saveFile(blob, `${key}-${new Date().toISOString().slice(0, 10)}.png`, card.title);
+    if (how === 'downloaded') UI.toast('Snapshot saved');
   }
 
   // ------------------------------------------------------------------ quick adjust
   /** One compact slider row: label + live value + slider. */
   function sliderRow({ label, value, min, max, step, format, onChange, tip }) {
+    // Widen the range to fit the current value, so a nudge never clamps it.
+    min = Math.min(min, value); max = Math.max(max, value);
     const val = h('span.qa-val', format(value));
     const s = h('input.slider', { type: 'range', min, max, step: step || 1, value, 'aria-label': label });
     const paint = () => s.style.setProperty('--fill', ((s.value - min) / (max - min)) * 100 + '%');
@@ -382,10 +382,12 @@
     const P = store().planFor(id);
     const set = (path, v) => store().set(path, v, { scenario: id });
     const yr = (v) => String(v);
+    const thisYear = new Date().getFullYear();
     const body = h('div');
     const draw = () => {
       const Q = store().planFor(id);
       const n1 = Q.people.p1.name, n2 = Q.people.p2.name;
+      const spend = Q.spending.retirement;
       UI.mount(body,
         h('div', { style: { marginBottom: '6px' } },
           h('span.pill', { style: { color: `var(--s${f.color})` } }, f.name),
@@ -397,10 +399,10 @@
         } }),
         !Q.retirement.together ? sliderRow({ label: `${n2} retires at`, value: Q.retirement.p2Age, min: 40, max: 65, format: yr, onChange: (v) => set('retirement.p2Age', v) }) : null,
         UI.toggleRow({ label: `${n1} job loss`, checked: Q.jobLoss.p1.enabled, tip: 'jobLoss', onChange: (on) => { set('jobLoss.p1.enabled', on); setTimeout(draw, 50); } }),
-        Q.jobLoss.p1.enabled ? sliderRow({ label: 'Year', value: Q.jobLoss.p1.year, min: 2026, max: 2045, format: yr, onChange: (v) => set('jobLoss.p1.year', v) }) : null,
+        Q.jobLoss.p1.enabled ? sliderRow({ label: 'Year', value: Q.jobLoss.p1.year, min: thisYear, max: thisYear + 19, format: yr, onChange: (v) => set('jobLoss.p1.year', v) }) : null,
         UI.toggleRow({ label: `${n2} job loss`, checked: Q.jobLoss.p2.enabled, onChange: (on) => { set('jobLoss.p2.enabled', on); setTimeout(draw, 50); } }),
-        Q.jobLoss.p2.enabled ? sliderRow({ label: 'Year', value: Q.jobLoss.p2.year, min: 2026, max: 2045, format: yr, onChange: (v) => set('jobLoss.p2.year', v) }) : null,
-        sliderRow({ label: 'Retirement spending', value: Q.spending.retirement, min: 60000, max: 120000, step: 1000, format: (v) => fmt.money(v), tip: 'safeSpend', onChange: (v) => set('spending.retirement', v) }),
+        Q.jobLoss.p2.enabled ? sliderRow({ label: 'Year', value: Q.jobLoss.p2.year, min: thisYear, max: thisYear + 19, format: yr, onChange: (v) => set('jobLoss.p2.year', v) }) : null,
+        sliderRow({ label: 'Retirement spending', value: spend, min: Math.min(60000, Math.floor((spend * 0.7) / 5000) * 5000), max: Math.max(120000, Math.ceil((spend * 1.4) / 5000) * 5000), step: 1000, format: (v) => fmt.money(v), tip: 'safeSpend', onChange: (v) => set('spending.retirement', v) }),
         sliderRow({ label: 'Return while working', value: Q.returns.working, min: 2, max: 8, step: 0.25, format: (v) => v.toFixed(2).replace(/0$/, '') + '%', tip: 'returns', onChange: (v) => set('returns.working', v) }),
         sliderRow({ label: 'Return in retirement', value: Q.returns.retired, min: 2, max: 8, step: 0.25, format: (v) => v.toFixed(2).replace(/0$/, '') + '%', onChange: (v) => set('returns.retired', v) }),
         h('div.qa-row', h('div.qa-top', h('span.qa-label', 'Roth conversions', UI.tipButton('conversions'))),
@@ -415,7 +417,9 @@
     UI.sheet.open({
       title: 'Quick Adjust', body,
       actions: [
-        f.id !== 'base' ? { label: 'Match Baseline', onClick: () => { store().resetScenario(id); draw(); UI.toast('Reset to preset'); } } : { label: 'Undo', onClick: () => { store().undo(); draw(); } },
+        f.id !== 'base'
+          ? { label: f.preset ? 'Reset scenario' : 'Match Baseline', onClick: () => { store().resetScenario(id); draw(); UI.toast(f.preset ? 'Reset to preset' : 'Matches Baseline'); } }
+          : { label: 'Undo', onClick: () => { store().undo(); draw(); } },
         { label: 'Done', primary: true, onClick: () => UI.sheet.close() },
       ],
     });
