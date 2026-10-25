@@ -42,7 +42,8 @@
       compare: ['base', 'spend75', 'retire2032'],
       checklist: DEFAULT_CHECKLIST.map((c, i) => ({ id: 'c' + i, ...c })),
       history: [],
-      settings: { pinHash: null, pinSalt: null, pinAsked: false, theme: 'auto' },
+      // changedSince/backupKey/lastBackup drive the backup reminder; leversOpen remembers that Home card.
+      settings: { pinHash: null, pinSalt: null, pinAsked: false, theme: 'auto', changedSince: null, backupKey: null, lastBackup: null, leversOpen: false },
     };
   }
 
@@ -64,8 +65,24 @@
   };
 
   S.save = function () {
+    // Note the first change since the last backup, for the backup reminder.
+    const st = S.state.settings;
+    if (!st.changedSince && !S.state.plan.meta.isSample && contentKey() !== st.backupKey) st.changedSince = new Date().toISOString().slice(0, 10);
     try { localStorage.setItem(KEY, JSON.stringify(S.state)); return true; }
     catch (e) { console.warn('Could not save', e); return false; }
+  };
+
+  /** A short fingerprint of what a backup file holds. */
+  function contentKey() {
+    const s = JSON.stringify([S.state.plan, S.state.scenarios, S.state.checklist]);
+    let hsh = 2166136261;
+    for (let i = 0; i < s.length; i++) { hsh ^= s.charCodeAt(i); hsh = Math.imul(hsh, 16777619); }
+    return (hsh >>> 0).toString(36) + '.' + s.length;
+  }
+  /** Everything on this device is now in a backup file. */
+  S.markBackedUp = function () {
+    Object.assign(S.state.settings, { backupKey: contentKey(), changedSince: null, lastBackup: new Date().toISOString().slice(0, 10) });
+    S.save();
   };
 
   S.on = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
@@ -76,7 +93,7 @@
   S.emit = emit;
 
   // ---- Undo -----------------------------------------------------------------
-  function snapshot() { return JSON.stringify({ plan: S.state.plan, scenarios: S.state.scenarios, checklist: S.state.checklist }); }
+  function snapshot() { return JSON.stringify({ plan: S.state.plan, scenarios: S.state.scenarios, checklist: S.state.checklist, history: S.state.history }); }
   /** Remember the current state before a change (rapid slider moves coalesce). */
   S.pushUndo = function (force) {
     const now = Date.now();
@@ -91,6 +108,7 @@
     if (!snap) return false;
     const o = JSON.parse(snap);
     S.state.plan = o.plan; S.state.scenarios = o.scenarios; S.state.checklist = o.checklist;
+    if (o.history) S.state.history = o.history;
     lastPush = 0;
     S.save(); emit('plan');
     return true;
@@ -112,22 +130,39 @@
     return Object.keys(sc.overrides || {}).some((k) => k === path || k.startsWith(path + '.') || path.startsWith(k + '.'));
   };
 
-  /** Change an input (on Baseline, or as an override on the active scenario). */
-  S.set = function (path, value, opts) {
-    opts = opts || {};
-    const id = opts.scenario || S.state.active;
-    S.pushUndo(opts.forceUndo);
+  /** Write one input on Baseline, or as an override on scenario `id`. */
+  function write(path, value, id) {
     if (id === 'base') {
       U.setPath(S.state.plan, path, U.clone(value));
       if (path.startsWith('balances.') && path !== 'balances.asOf') S.state.plan.meta.lastUpdated = new Date().toISOString().slice(0, 10);
+      // Your own names, birthdays, kids or balances: this is no longer the sample household.
+      if (/^(people|kids|balances)(\.|$)/.test(path)) S.state.plan.meta.isSample = false;
     } else {
       const sc = S.scenario(id);
       const baseVal = U.getPath(S.state.plan, path);
       if (JSON.stringify(baseVal) === JSON.stringify(value)) delete sc.overrides[path];
       else sc.overrides[path] = U.clone(value);
     }
+  }
+
+  /** Change an input (on Baseline, or as an override on the active scenario). */
+  S.set = function (path, value, opts) {
+    opts = opts || {};
+    const id = opts.scenario || S.state.active;
+    S.pushUndo(opts.forceUndo);
+    write(path, value, id);
     S.save();
     emit(opts.silent ? 'plan-quiet' : 'plan');
+  };
+
+  /** Change several inputs at once: one undo step, one recalculation. */
+  S.setMany = function (values, opts) {
+    opts = opts || {};
+    const id = opts.scenario || S.state.active;
+    S.pushUndo(true);
+    for (const [path, value] of Object.entries(values)) write(path, value, id);
+    S.save();
+    emit('plan');
   };
 
   /** Undo a scenario's override, or put a Baseline input back to its default. */
@@ -161,7 +196,8 @@
 
   S.setActive = function (id) { S.state.active = id; S.save(); emit('active'); };
 
-  S.addScenario = function (fromId, name) {
+  /** New scenario copied from `fromId`, plus any `extra` overrides on top. */
+  S.addScenario = function (fromId, name, extra) {
     const src = S.scenario(fromId);
     const used = new Set(S.state.scenarios.map((s) => s.color));
     let color = 1;
@@ -170,6 +206,7 @@
     const sc = { id: 'sc' + Date.now().toString(36), preset: null, group: 'Custom', name: name || (src.name + ' copy'), color, autoName: false, overrides: U.clone(src.overrides || {}) };
     S.pushUndo(true);
     S.state.scenarios.push(sc);
+    for (const [path, value] of Object.entries(extra || {})) write(path, value, sc.id);
     S.save(); emit('scenarios');
     return sc;
   };
@@ -227,6 +264,8 @@
     S.state.compare = Array.isArray(compare) && compare.length ? compare : fresh.compare;
     S.state.compare = S.state.compare.filter((id) => S.state.scenarios.find((s) => s.id === id));
     S.state.active = 'base';
+    // The file just imported is itself a backup of this plan.
+    Object.assign(S.state.settings, { backupKey: contentKey(), changedSince: null });
     S.save(); emit('import');
     return { name: P.meta.planName, scenarios: S.state.scenarios.length };
   };
@@ -239,12 +278,21 @@
     };
   };
 
+  /** Replace everything with a new plan (from the setup guide). Keeps settings; undo brings the old plan back. */
+  S.startPlan = function (plan) {
+    S.pushUndo(true);
+    const settings = S.state.settings;
+    S.state = freshState(plan);
+    S.state.settings = settings;
+    S.save(); emit('import');
+  };
+
   /** Start over with the sample household (keeps nothing). */
   S.resetAll = function () {
     S.pushUndo(true);
     const settings = S.state.settings;
     S.state = freshState();
-    S.state.settings = settings;
+    S.state.settings = Object.assign(settings, { changedSince: null });
     S.save(); emit('import');
   };
 

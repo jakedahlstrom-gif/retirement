@@ -4,7 +4,8 @@
  *   - switches between the five tabs
  *   - whenever an input changes: refreshes the screen right away, then asks
  *     the background worker for new results and animates them in
- *   - import / export of plan files
+ *   - import / export of plan files, and the year-by-year spreadsheet
+ *   - light / dark appearance
  *   - registers the service worker so the app works offline
  */
 (function (RP) {
@@ -83,18 +84,21 @@
   const runMetrics = UI.debounce(() => {
     const plan = store.activePlan();
     UI.home.clearMetrics();
-    RP.engineClient.metrics(plan, ['safe', 'green', 'coast'], (key, value) => {
+    RP.engineClient.metrics(plan, ['safe', 'earliest', 'green', 'coast'], (key, value) => {
       UI.home.metricsArrived(key);
       UI.home.updateMetrics({ [key]: value });
-    }).catch((e) => { if (e.message !== 'cancelled') console.error(e); });
+    }).then(() => UI.levers.refresh())
+      .catch((e) => { if (e.message !== 'cancelled') console.error(e); });
   }, 500);
 
   function onStoreChange(what) {
     if (what === 'plan-quiet') return;
+    keepStorage();
     paintPill();
     UI.home.syncInputs();
     if (['plan', 'active', 'import', 'scenarios'].includes(what)) {
       RP.engineClient.cancelSlow();
+      UI.levers.invalidate();
       runAnalysis();
     }
     if (what === 'compare' || what === 'scenarios' || what === 'plan' || what === 'import') {
@@ -126,27 +130,93 @@
     input.click();
   };
 
-  App.exportFile = async function () {
-    const data = JSON.stringify(store.exportData(), null, 2);
-    const name = `retirement-plan-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    const blob = new Blob([data], { type: 'application/json' });
+  /**
+   * Hand a file to the phone's share sheet, or download it where sharing files
+   * isn't supported. Resolves 'shared', 'downloaded' or null (cancelled).
+   */
+  App.saveFile = async function (blob, name, title) {
     try {
-      const file = new File([blob], name, { type: 'application/json' });
+      const file = new File([blob], name, { type: blob.type });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Retirement plan backup' });
-        return;
+        await navigator.share({ files: [file], title });
+        return 'shared';
       }
-    } catch (e) { if (e && e.name === 'AbortError') return; }
+    } catch (e) { if (e && e.name === 'AbortError') return null; }
     const url = URL.createObjectURL(blob);
     const a = h('a', { href: url, download: name });
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    UI.toast('Backup saved');
+    return 'downloaded';
   };
+  const today = () => new Date().toISOString().slice(0, 10);
+
+  App.exportFile = async function () {
+    const data = JSON.stringify(store.exportData(), null, 2);
+    const how = await App.saveFile(new Blob([data], { type: 'application/json' }), `retirement-plan-backup-${today()}.json`, 'Retirement plan backup');
+    if (!how) return;
+    store.markBackedUp();
+    if (how === 'downloaded') UI.toast('Backup saved');
+    UI.home.refreshAlerts();
+    App.refreshPlan();
+  };
+
+  /** The year-by-year table (typical market, today's dollars) as a spreadsheet file. */
+  App.exportCsv = async function (a, scenarioName) {
+    a = a || App.last;
+    if (!a) { UI.toast('Still calculating…'); return; }
+    const P = a.plan;
+    const cols = [
+      ['Year', (r) => r.year], [`${P.people.p1.name} age`, (r) => r.ages.p1], [`${P.people.p2.name} age`, (r) => r.ages.p2],
+      ['Working', (r) => (r.working ? 'yes' : 'no')],
+      ['Paychecks & severance', (r) => r.income.wages], ['Part-time work', (r) => r.income.partTime], ['Social Security', (r) => r.income.ss],
+      ['Unemployment', (r) => r.income.ui], ['Disability benefit', (r) => r.income.disability], ['Windfalls & other income', (r) => r.income.windfall],
+      ['Everyday spending', (r) => r.spending.core], ['Daycare', (r) => r.spending.daycare], ['Extra health costs', (r) => r.spending.health],
+      ['College', (r) => r.spending.college], ['Extras', (r) => r.spending.extras], ['Mortgage change', (r) => r.spending.mortgageAdj],
+      ['From cash & brokerage', (r) => r.src.cash], ['From Roth contributions', (r) => r.src.rothBasis], ['From Roth conversions', (r) => r.src.rothConversions],
+      ['From Roth growth', (r) => r.src.rothEarnings], ['From 401k / IRA', (r) => r.src.preTax], ['From HSA', (r) => r.src.hsa], ['Penalty withdrawals', (r) => r.src.penalty],
+      ['Roth conversions', (r) => r.converted], ['MAGI', (r) => r.magi],
+      ['Federal tax', (r) => r.taxes.federal], ['State tax', (r) => r.taxes.state], ['Payroll tax', (r) => r.taxes.fica], ['Penalties', (r) => r.taxes.penalty],
+      ['Health coverage', (r) => UI.fmt.coverage(r.health.status)],
+      ['Saved to retirement accounts', (r) => r.saving.pre401k + r.saving.match + r.saving.hsa + r.saving.rothIra + r.saving.mega],
+      ['Saved to brokerage', (r) => r.saving.taxable + r.saving.leftover],
+      ['Pre-tax balance', (r) => r.balances.preTax], ['Roth balance', (r) => r.balances.roth], ['HSA balance', (r) => r.balances.hsa],
+      ['Cash & taxable balance', (r) => r.balances.taxable], ['Total savings', (r) => r.balances.total],
+      ['Home equity', (r) => r.balances.homeEquity], ['Net worth', (r) => r.balances.netWorth],
+    ];
+    const cell = (v) => (typeof v === 'number' ? String(Math.round(v)) : /[",\r\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+    const lines = [cols.map(([t]) => cell(t)), ...a.rows.map((r) => cols.map(([, f]) => cell(f(r))))].map((l) => l.join(','));
+    const slug = String(scenarioName || store.scenario().name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'plan';
+    // The byte-order mark tells Excel the file is UTF-8 (names, the ’ in labels).
+    const how = await App.saveFile(new Blob(['﻿' + lines.join('\r\n') + '\r\n'], { type: 'text/csv' }), `retirement-${slug}-${today()}.csv`, 'Year-by-year projection');
+    if (how === 'downloaded') UI.toast('Spreadsheet saved: typical market, today’s dollars');
+  };
+
+  // ------------------------------------------------------------- appearance
+  /** Auto follows the phone; Light or Dark pins it. */
+  function themeAttr() {
+    const t = store.state.settings.theme;
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    else delete document.documentElement.dataset.theme;
+  }
+  App.setTheme = function (t) {
+    store.updateSettings({ theme: t });
+    themeAttr();
+    UI.sky.repaint();
+    UI.charts.applyTheme();
+  };
+
+  /** Ask the browser not to clear this site's storage when space runs low (once, for a real plan). */
+  let persistAsked = false;
+  function keepStorage() {
+    if (persistAsked || store.state.plan.meta.isSample || !(navigator.storage && navigator.storage.persist)) return;
+    persistAsked = true;
+    navigator.storage.persist().catch(() => { /* not granted: nothing to do */ });
+  }
 
   // ------------------------------------------------------------------- boot
   App.start = async function () {
     store.load();
+    themeAttr();
     UI.sky.mount();
     buildShell();
     UI.home.build(views.home);
@@ -160,6 +230,7 @@
     if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
       navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW', e));
     }
+    keepStorage();
     await RP.pin.boot();
   };
 

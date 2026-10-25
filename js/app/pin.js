@@ -32,8 +32,11 @@
     return 'fnv:' + hsh.toString(16);
   }
 
-  /** Full-screen keypad. mode: 'unlock' | 'create' | 'confirm'. Resolves with the 4 digits. */
-  function keypad({ title, text, allowSkip, onSkip, extra }) {
+  /**
+   * Full-screen keypad. Resolves with the 4 digits. `left` = optional
+   * { label, onClick } for the key left of 0 (Skip or Cancel).
+   */
+  function keypad({ title, text, left, extra }) {
     return new Promise((resolve) => {
       let digits = '';
       const dots = h('div.pin-dots', [0, 1, 2, 3].map(() => h('span')));
@@ -44,10 +47,10 @@
         UI.haptic(); paint();
         if (digits.length === 4) setTimeout(() => resolve({ digits, shake: () => { dots.classList.remove('shake'); void dots.offsetWidth; dots.classList.add('shake'); digits = ''; paint(); } }), 120);
       };
-      const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', allowSkip ? 'skip' : '', '0', 'del'];
+      const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', left ? 'left' : '', '0', 'del'];
       const pad = h('div.keypad', keys.map((k) => {
         if (k === '') return h('span');
-        if (k === 'skip') return h('button.key.ghost', { onclick: () => onSkip && onSkip() }, 'Skip');
+        if (k === 'left') return h('button.key.ghost', { onclick: () => left.onClick() }, left.label);
         if (k === 'del') return h('button.key.ghost', { 'aria-label': 'Delete', onclick: () => press('del') }, 'Delete');
         return h('button.key', { onclick: () => press(k) }, k);
       }));
@@ -83,6 +86,7 @@
 
   function forgotFlow() {
     UI.sheet.open({
+      overLock: true,
       title: 'Forgot your PIN?',
       body: h('p.tip-text', 'For privacy there’s no way to recover it. You can erase everything on this device and re-import your plan file or a backup.'),
       actions: [
@@ -92,13 +96,22 @@
     });
   }
 
-  async function createFlow(allowSkip) {
-    const skip = () => { store().updateSettings({ pinAsked: true }); closeLock(); PIN._resolveCreate && PIN._resolveCreate(false); };
+  /**
+   * firstRun: offered at startup (Skip), otherwise opened from settings (Cancel).
+   * An existing PIN is only replaced once the new one is confirmed.
+   */
+  async function createFlow(firstRun) {
+    const leave = () => {
+      if (firstRun) store().updateSettings({ pinAsked: true });
+      closeLock();
+      if (PIN._resolveCreate) PIN._resolveCreate(false);
+    };
+    const left = { label: firstRun ? 'Skip' : 'Cancel', onClick: leave };
     return new Promise(async (resolve) => {
       PIN._resolveCreate = resolve;
       for (;;) {
-        const a = await keypad({ title: 'Create a PIN', text: 'Keep your plan private on this phone. You can turn this off later in Plan › PIN lock.', allowSkip, onSkip: skip });
-        const b = await keypad({ title: 'Confirm PIN', text: 'Enter the same 4 digits again.', allowSkip, onSkip: skip });
+        const a = await keypad({ title: 'Create a PIN', text: 'Keep your plan private on this phone. You can turn this off later in Plan › PIN lock.', left });
+        const b = await keypad({ title: 'Confirm PIN', text: 'Enter the same 4 digits again.', left });
         if (a.digits === b.digits) {
           const salt = randomSalt();
           store().updateSettings({ pinSalt: salt, pinHash: await hashPin(a.digits, salt), pinAsked: true });

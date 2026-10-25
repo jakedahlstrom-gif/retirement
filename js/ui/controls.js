@@ -47,12 +47,15 @@
     window.addEventListener('mouseup', up);
   }
   /**
-   * opts: { title, body: Node|Node[], actions: [{ label, primary, danger, onClick }], onClose }
+   * opts: { title, body: Node|Node[], actions: [{ label, primary, danger, onClick }], onClose,
+   *         overLock (shows above the PIN lock screen) }
    */
   sheet.open = function (opts) {
     ensure();
     if (current && current.onClose) current.onClose();
     current = opts;
+    el.classList.toggle('over-lock', !!opts.overLock);
+    scrim.classList.toggle('over-lock', !!opts.overLock);
     const body = h('div.sheet-body', opts.body);
     const kids = [
       h('div.sheet-grab', h('span')),

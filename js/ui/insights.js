@@ -34,7 +34,11 @@
 
     // Success
     if (sum.successRate != null && sum.successRate < 0.8) {
-      out.push({ level: 'bad', title: `Success is ${fmt.pct(sum.successRate)}`, text: 'Fewer than 8 in 10 market scenarios fund the whole plan.', fix: 'Try retiring a year or two later, or spending a little less.', path: 'retirement.p1Age', years: [] });
+      const e = metrics && metrics.earliest;
+      const fix = e && e.age != null && e.age > P.retirement.p1Age
+        ? `Retiring at ${e.age} would reach ${e.target}%, or try spending a little less.`
+        : 'Try retiring a year or two later, or spending a little less.';
+      out.push({ level: 'bad', title: `Success is ${fmt.pct(sum.successRate)}`, text: 'Fewer than 8 in 10 market scenarios fund the whole plan.', fix, path: 'retirement.p1Age', years: [] });
     }
     // Typical path runs short
     if (a.summary.shortfallYear) {
@@ -89,6 +93,11 @@
     if (months > 6) {
       out.push({ level: 'info', title: 'Balances are over 6 months old', text: `Last updated ${fmt.date(P.balances.asOf)}.`, fix: 'Run the annual check-in.', path: 'balances.asOf', years: [], action: 'checkin' });
     }
+    // The plan lives only in this browser: nudge a backup a month after the first unsaved change.
+    const settings = RP.store && RP.store.state ? RP.store.state.settings : {};
+    if (!P.meta.isSample && settings.changedSince && Date.now() - new Date(settings.changedSince + 'T00:00:00').getTime() > 30 * 864e5) {
+      out.push({ level: 'info', title: 'Back up your changes', text: `Your plan is stored only in this browser. Changes since ${fmt.date(settings.changedSince)} aren’t in a backup file yet.`, fix: 'Export a backup.', path: null, years: [], action: 'backup' });
+    }
     if (metrics && metrics.coast && metrics.coast.year == null) {
       out.push({ level: 'info', title: 'No Coast FIRE date yet', text: 'Stopping saving in any year before retiring keeps success under target.', fix: 'Keep saving; it’s working.', path: 'sim.coastTarget', years: [] });
     }
@@ -139,11 +148,13 @@
     return list.sort((x, y) => x.year - y.year);
   };
 
-  /** A few plain-English sentences describing the plan. */
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  /** A few plain-English sentences describing the plan (HTML; names are escaped). */
   I.summary = function (a, metrics) {
     if (!a) return '';
     const P = a.plan, S = a.schedule, rows = a.rows, sum = a.summary;
-    const n1 = P.people.p1.name, n2 = P.people.p2.name;
+    const n1 = esc(P.people.p1.name), n2 = esc(P.people.p2.name);
     const ry = S.retireYear;
     const a1 = ry - 1 - P.people.p1.birthYear, a2 = ry - 1 - P.people.p2.birthYear;
     const parts = [];
@@ -168,10 +179,18 @@
       if (avgConv > 1000) parts.push(`Roth conversions of about <b>${fmt.money(avgConv)}/yr</b> keep income under the health-program line${sum.lastMnCareYear ? `, with MinnesotaCare through ${sum.lastMnCareYear}` : ''}.`);
     }
     if (a.sepp && a.sepp.payment > 0 && a.sepp.withoutPenalties != null) {
-      parts.push(`72(t) payments of about <b>${fmt.money(a.sepp.payment)}/yr</b> from ${P.people[a.sepp.person].name}’s 401k (${a.sepp.startYear}–${a.sepp.endYear}) cut penalties from ${fmt.money(a.sepp.withoutPenalties)} to <b>${fmt.money(sum.totalPenalties)}</b>.`);
+      parts.push(`72(t) payments of about <b>${fmt.money(a.sepp.payment)}/yr</b> from ${esc(P.people[a.sepp.person].name)}’s 401k (${a.sepp.startYear}–${a.sepp.endYear}) cut penalties from ${fmt.money(a.sepp.withoutPenalties)} to <b>${fmt.money(sum.totalPenalties)}</b>.`);
     } else if (a.sepp && a.sepp.note) parts.push(`72(t): ${a.sepp.note}`);
     parts.push(`Social Security starts in ${S.ssDetail.p1.claimYear} and ${S.ssDetail.p2.claimYear}.`);
     if (metrics && metrics.safe && metrics.safe.amount) parts.push(`You could spend up to <b>${fmt.money(metrics.safe.amount)}/yr</b> and stay at ${P.sim.successTarget}% success.`);
+    const e = metrics && metrics.earliest;
+    if (e && !e.retired) {
+      const cur = P.retirement.p1Age;
+      if (e.age == null) parts.push(`Even working until ${e.maxAge} doesn’t reach ${e.target}% success, so spending is the bigger lever.`);
+      else if (e.now) parts.push(`You could stop working now and still have ${e.target}% success.`);
+      else if (e.age < cur) parts.push(`${n1} could retire as early as <b>${e.age}</b> and still have ${e.target}% success.`);
+      else if (e.age > cur) parts.push(`Reaching ${e.target}% success means ${n1} working until about <b>${e.age}</b>.`);
+    }
     return parts.join(' ');
   };
 })(globalThis.RP = globalThis.RP || {});

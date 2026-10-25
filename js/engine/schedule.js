@@ -236,6 +236,7 @@
         S.hasMinnesotaCare[i] = false;
       } else if ((P.household.state || 'MN') !== 'MN') {
         S.state[i] = 'other';
+        S.stateRate[i] = P.household.stateTaxPct || 0;
         S.hasMinnesotaCare[i] = false;
       }
 

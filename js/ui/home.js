@@ -26,6 +26,12 @@
   function previewYear(P) { return anchor ? anchor.year + (naiveYear(P) - anchor.naive) : naiveYear(P); }
 
   function plural(n, word) { return `${n} ${word}${n === 1 ? '' : 's'}`; }
+  /** "in 18 years" for a calendar year, counted like the hero countdown (to Jan 1). */
+  function untilText(year) {
+    const months = UI.sky.monthsUntil(year);
+    if (months <= 0) return 'this year';
+    return 'in ' + (months < 12 ? plural(months, 'month') : plural(Math.floor(months / 12), 'year'));
+  }
   function togoText(months) {
     if (months <= 0) return 'Retirement is here';
     const y = Math.floor(months / 12), m = months % 12;
@@ -60,13 +66,30 @@
 
     // Retirement age slider
     els.ageSlider = h('input.slider', { type: 'range', min: 45, max: 65, step: 1, 'aria-label': 'Retirement age' });
+    els.ageScale = h('div.slider-scale');
+    // Earliest age that still meets the success target, with a shortcut to it
+    els.earliestLabel = h('span', 'Earliest age for 90% success');
+    els.earliestVal = h('span.e-val', '…');
+    els.earliestUse = h('button.link-btn.e-use', { type: 'button', hidden: true, onclick: () => {
+      const e = Home._metrics && Home._metrics.earliest;
+      if (!e || e.age == null) return;
+      // Same move the search made: a separate date for person 2 shifts by as many years.
+      const R = store().activePlan().retirement;
+      const o = { 'retirement.p1Age': e.age };
+      if (!R.together) o['retirement.p2Age'] = RP.util.clamp(R.p2Age + e.age - R.p1Age, 30, 80);
+      store().setMany(o);
+      UI.toast(`${store().activePlan().people.p1.name} retires at ${e.age}`, 'Undo', () => store().undo());
+    } }, 'Use');
+    els.earliest = h('div.earliest', h('span.e-label', els.earliestLabel, UI.tipButton('earliest')), els.earliestVal, els.earliestUse);
     els.togetherWrap = h('div');
     els.p2Wrap = h('div');
     const retire = h('div.card.retire-card',
       els.ageSlider,
-      h('div.slider-scale', h('span', '45'), h('span', '55'), h('span', '65')),
+      els.ageScale,
+      els.earliest,
       els.togetherWrap, els.p2Wrap);
     const commitAge = UI.debounce((v) => store().set('retirement.p1Age', v), 60);
+    trackDrag(els.ageSlider);
     els.ageSlider.addEventListener('input', () => {
       const v = Number(els.ageSlider.value);
       paintSlider(els.ageSlider);
@@ -113,9 +136,10 @@
     els.sampleBanner = h('div');
     els.alerts = h('div');
     els.milestone = h('div');
+    els.levers = UI.levers.build();
 
     // Order: when you retire → the big lever → where you stand → the path →
-    // what needs attention → details on demand → what's next.
+    // what needs attention → what would help → details on demand → what's next.
     UI.mount(root,
       els.hero,
       retire,
@@ -123,6 +147,7 @@
       duo,
       proj,
       els.alerts,
+      els.levers,
       els.more,
       els.brief,
       els.milestone,
@@ -132,6 +157,20 @@
   function paintSlider(s) {
     const pct = ((s.value - s.min) / (s.max - s.min)) * 100;
     s.style.setProperty('--fill', pct + '%');
+  }
+
+  /** While a finger is on a slider, updates from the store don't move it. */
+  function trackDrag(s) {
+    s.addEventListener('input', () => { s._drag = true; });
+    for (const t of ['change', 'pointerup', 'pointercancel', 'blur']) s.addEventListener(t, () => { s._drag = false; });
+  }
+  /** Show a stored value on a slider, widening its range if the value is outside it. */
+  function showOnSlider(s, v) {
+    if (s._drag) return;
+    if (v < Number(s.min)) s.min = v;
+    if (v > Number(s.max)) s.max = v;
+    s.value = v;
+    paintSlider(s);
   }
 
   function updateAgeSub(P) {
@@ -145,39 +184,55 @@
     if (!els) return;
     const P = store().activePlan();
     els.ageTitle.textContent = `${P.people.p1.name} retires at`;
-    els.ageSlider.value = P.retirement.p1Age;
-    paintSlider(els.ageSlider);
+    showOnSlider(els.ageSlider, P.retirement.p1Age);
+    const lo = Number(els.ageSlider.min), hi = Number(els.ageSlider.max);
+    UI.mount(els.ageScale, h('span', String(lo)), h('span', String(Math.round((lo + hi) / 2))), h('span', String(hi)));
+    // Mid-drag, the slider's own handler keeps the hero current; the store lags a few ms behind.
+    const dragging = els.ageSlider._drag || (els.p2 && els.p2.s2._drag);
     if (!ageShown) { ageShown = true; UI.countTo(els.ageVal, P.retirement.p1Age, (x) => String(Math.round(x)), 1100, Math.max(0, P.retirement.p1Age - 40)); }
-    else if (els.ageVal._val !== P.retirement.p1Age) { els.ageVal.textContent = P.retirement.p1Age; els.ageVal._val = P.retirement.p1Age; }
-    updateAgeSub(P);
-    showCountdown(previewYear(P));
+    else if (!dragging && els.ageVal._val !== P.retirement.p1Age) {
+      cancelAnimationFrame(els.ageVal._raf); // a change during the launch count-up wins
+      els.ageVal.textContent = P.retirement.p1Age; els.ageVal._val = P.retirement.p1Age;
+    }
+    if (!dragging) { updateAgeSub(P); showCountdown(previewYear(P)); }
     UI.mount(els.togetherWrap, h('div.retire-row',
       h('span', { style: { display: 'flex', alignItems: 'center', gap: '6px' } }, 'Retire together', UI.tipButton('together')),
       UI.toggle({ checked: P.retirement.together, label: 'Retire together', onChange: (on) => {
         if (!on) store().set('retirement.p2Age', P.people.p1.birthYear + P.retirement.p1Age - P.people.p2.birthYear, { silent: true });
         store().set('retirement.together', on);
       } })));
+    // Person 2's own slider. Built once and then only updated, so a sync in the
+    // middle of a drag doesn't swap the slider out from under the finger.
     if (!P.retirement.together) {
-      const s2 = h('input.slider', { type: 'range', min: 40, max: 65, step: 1, value: P.retirement.p2Age, 'aria-label': P.people.p2.name + ' retirement age' });
-      const val = h('span', String(P.retirement.p2Age));
-      const sub = h('span.value-sub', `End of ${P.people.p2.birthYear + P.retirement.p2Age}`);
-      const commit = UI.debounce((v) => store().set('retirement.p2Age', v), 60);
-      s2.addEventListener('input', () => {
-        paintSlider(s2); val.textContent = s2.value; sub.textContent = `End of ${P.people.p2.birthYear + Number(s2.value)}`;
-        const Q = Object.assign({}, P, { retirement: Object.assign({}, P.retirement, { p2Age: Number(s2.value) }) });
-        showCountdown(previewYear(Q));
-        commit(Number(s2.value));
-      });
-      paintSlider(s2);
-      UI.mount(els.p2Wrap, h('div.p2-block',
-        h('div.p2-top', h('span.label', `${P.people.p2.name} retires at`), sub),
-        h('div.value-lg', val), s2));
-    } else UI.mount(els.p2Wrap);
+      if (!els.p2) {
+        const s2 = h('input.slider', { type: 'range', min: 40, max: 65, step: 1 });
+        const val = h('span'), sub = h('span.value-sub'), title = h('span.label');
+        const commit = UI.debounce((v) => store().set('retirement.p2Age', v), 60);
+        trackDrag(s2);
+        s2.addEventListener('input', () => {
+          const Q = store().activePlan();
+          const v = Number(s2.value);
+          paintSlider(s2); val.textContent = v; sub.textContent = `End of ${Q.people.p2.birthYear + v}`;
+          showCountdown(previewYear(Object.assign({}, Q, { retirement: Object.assign({}, Q.retirement, { p2Age: v }) })));
+          UI.haptic();
+          commit(v);
+        });
+        els.p2 = { s2, val, sub, title };
+        UI.mount(els.p2Wrap, h('div.p2-block', h('div.p2-top', title, sub), h('div.value-lg', val), s2));
+      }
+      const { s2, val, sub, title } = els.p2;
+      s2.setAttribute('aria-label', P.people.p2.name + ' retirement age');
+      title.textContent = `${P.people.p2.name} retires at`;
+      if (!s2._drag) { val.textContent = P.retirement.p2Age; sub.textContent = `End of ${P.people.p2.birthYear + P.retirement.p2Age}`; }
+      showOnSlider(s2, P.retirement.p2Age);
+    } else if (els.p2) { els.p2 = null; UI.mount(els.p2Wrap); }
 
     if (P.meta && P.meta.isSample) {
       UI.mount(els.sampleBanner, h('div.card.banner',
-        h('div.b-text', h('b', 'You’re looking at a sample household. '), 'Import your plan file to see your own numbers. It stays on this device.'),
-        h('button.btn.small.primary', { onclick: () => RP.app.importFile() }, 'Import')));
+        h('div.b-text', h('b', 'You’re looking at a sample household. '), 'Set up your own plan in a few minutes, or import a plan file. Your numbers stay on this device.'),
+        h('div.b-actions',
+          h('button.btn.small.primary', { onclick: () => UI.setup.start() }, 'Set up'),
+          h('button.btn.small', { onclick: () => RP.app.importFile() }, 'Import'))));
     } else UI.mount(els.sampleBanner);
   };
 
@@ -219,7 +274,7 @@
     if (!els || !a) return;
     const s = a.summary;
     anchor = { year: s.retireYear, naive: naiveYear(a.plan) };
-    showCountdown(s.retireYear);
+    if (!els.ageSlider._drag && !(els.p2 && els.p2.s2._drag)) showCountdown(s.retireYear);
 
     const pct = s.successRate;
     UI.countTo(els.pct, Math.round(pct * 100), (x) => String(Math.round(x)), 900, 0);
@@ -263,6 +318,7 @@
       els.coast.textContent = mm.coast.year ? String(mm.coast.year) : 'Not yet';
       els.coastSub.textContent = mm.coast.year ? (mm.coast.year <= new Date().getFullYear() ? 'Reached ✓' : `Could stop saving then`) : 'Keep saving for now';
     }
+    if (mm.earliest) paintEarliest(mm.earliest);
     if (Home._a) {
       els.summary.innerHTML = UI.insights.summary(Home._a, mm);
       renderAlerts(Home._a, mm);
@@ -274,8 +330,24 @@
   Home.clearMetrics = function () {
     Home._metrics = {};
     if (!els) return;
-    for (const k of ['safe', 'green', 'coast']) els[k].style.opacity = '0.45';
+    for (const k of ['safe', 'earliest', 'green', 'coast']) els[k].style.opacity = '0.45';
+    els.earliestUse.hidden = true;
   };
+
+  /** "Earliest age for 90% success: 54  Use" under the retirement slider. */
+  function paintEarliest(e) {
+    const P = store().activePlan();
+    els.earliestLabel.textContent = `Earliest age for ${P.sim.successTarget}% success`;
+    els.earliest.hidden = !!e.retired; // nothing left to decide once you've both stopped working
+    if (e.age == null) {
+      els.earliestVal.textContent = `Not by ${e.maxAge}`;
+      els.earliestUse.hidden = true;
+      return;
+    }
+    const here = e.age === P.retirement.p1Age;
+    els.earliestVal.textContent = e.now ? `${e.age} · now` : here ? `${e.age} ✓` : String(e.age);
+    els.earliestUse.hidden = here;
+  }
   Home.metricsArrived = function (k) { if (els && els[k]) els[k].style.opacity = '1'; };
 
   function renderMoreSummary() {
@@ -294,6 +366,9 @@
     els.brief.setSummary(m ? m[0] : text);
   }
 
+  /** Re-check alerts without new results (e.g. right after a backup). */
+  Home.refreshAlerts = function () { if (Home._a) renderAlerts(Home._a, Home._metrics); };
+
   function renderAlerts(a, m) {
     const list = UI.insights.alerts(a, m);
     Home._alerts = list;
@@ -304,7 +379,11 @@
       return;
     }
     const item = (al) => h('button.alert.' + al.level, {
-      onclick: () => { if (al.action === 'checkin' && UI.checkin) UI.checkin.start(); else UI.plan.focusField(al.path); },
+      onclick: () => {
+        if (al.action === 'checkin') UI.checkin.start();
+        else if (al.action === 'backup') RP.app.exportFile();
+        else UI.plan.focusField(al.path);
+      },
     },
     h('div.ico', UI.icon(al.level === 'info' ? 'info' : 'alert')),
     h('div', h('div.a-title', al.title), h('div.a-text', al.text), h('div.a-fix', al.fix + ' →')));
@@ -327,7 +406,7 @@
     UI.mount(els.milestone, h('div.card',
       h('div.card-title', h('span', 'Next milestone')),
       next ? h('div.badge-card', h('div.medal', next.emoji),
-        h('div', h('div.value-md', next.title), h('div.value-sub', `${next.year} · in ${Math.max(0, next.year - new Date().getFullYear())} years`))) : h('div', 'Every milestone reached.'),
+        h('div', h('div.value-md', next.title), h('div.value-sub', `${next.year} · ${untilText(next.year)}`))) : h('div', 'Every milestone reached.'),
       h('div', { style: { marginTop: '18px' } }, h('div.badges-row', list.map((x) =>
         h('div.mini-badge' + (x.earned ? '.earned' : ''), h('div.medal' + (x.earned ? '.earned' : ''), { style: { opacity: x.earned ? 1 : 0.55 } }, x.emoji), h('div', x.title), h('div', { style: { color: 'var(--muted)' } }, String(x.year))))))));
   }

@@ -121,6 +121,8 @@
     const [y, m, d] = String(iso).split('-').map(Number);
     return `${fmt.monthName(m)} ${d || 1}, ${y}`;
   };
+  /** A year's health coverage, in words. */
+  fmt.coverage = (status) => ({ employer: 'Employer coverage', mncare: 'MinnesotaCare', ma: 'Medical Assistance', aca: 'MNsure with subsidy', 'aca-full': 'MNsure, full price', medicare: 'Medicare' }[status] || status);
 
   // --- Motion ------------------------------------------------------------------
   UI.reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
