@@ -5,12 +5,13 @@
  * It only ever caches this app's files. It never sends your data anywhere.
  * When you update the app, bump VERSION so phones fetch the new files.
  */
-const VERSION = 'horizon-v10';
+const VERSION = 'horizon-v11';
 const FILES = [
   './', 'index.html', 'manifest.json', 'css/app.css',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/icon-maskable-512.png',
-  'icons/icon.svg', 'icons/favicon.svg', 'icons/favicon-32.png',
+  'icons/favicon-32.png', 'icons/favicon-180.png',
   'vendor/chart.umd.min.js', 'data/historical-returns.js',
+  'img/postcards/coast-1.webp', 'img/postcards/coast-2.webp', 'img/postcards/coast-3.webp', 'img/postcards/coast-4.webp',
   'js/engine/util.js', 'js/engine/defaults.js', 'js/engine/tax.js', 'js/engine/socialsecurity.js',
   'js/engine/health.js', 'js/engine/schedule.js', 'js/engine/simulate.js', 'js/engine/montecarlo.js',
   'js/engine/api.js', 'js/engine/scenarios.js', 'js/engine/slim.js', 'js/engine/levers.js', 'js/engine/explore.js', 'js/engine/lab.js', 'js/worker.js',

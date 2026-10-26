@@ -922,7 +922,8 @@ body.locked .app, body.locked .tabbar, body.locked .sheet:not(.over-lock), body.
 .hero-postcard { display: inline-flex; align-items: center; gap: 7px; margin-top: 14px; height: 32px; border-radius: 16px; font-size: 13.5px; font-weight: 500; transition: transform .2s var(--ease-spring), background .2s; }
 .hero-postcard svg { width: 16px; height: 16px; }
 .hero-postcard:active { transform: scale(.96); }
-.pc-postcard { display: block; width: 100%; height: auto; border-radius: 16px; box-shadow: 0 12px 36px rgba(0, 0, 0, .35); }
+.pc-box { aspect-ratio: 1080 / 1350; display: grid; }
+.pc-postcard { display: block; width: 100%; height: auto; border-radius: 10px; box-shadow: 0 12px 36px rgba(0, 0, 0, .35); }
 
 /* Possible futures */
 .fu-box { position: relative; height: 270px; margin: 4px -6px 2px; }
