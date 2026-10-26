@@ -409,7 +409,7 @@
     const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
     if (mq) mq.addEventListener('change', repaint);
     const mo = new MutationObserver(repaint);
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-scene', 'class', 'style'] });
 
     function summary(m) {
       const last = m.years.length - 1, r = m.ri;

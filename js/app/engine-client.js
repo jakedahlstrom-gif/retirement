@@ -8,6 +8,9 @@
  *            wastes time on stale numbers.
  *   levers — "what moves the needle" (only while that card is open). Same rule.
  *   explore — the deep dives (Social Security, Roth conversions, history). Same rule.
+ *   map0–3 — the Lab's decision map, split over up to four workers. Same rule.
+ *   mixPath, mixOdds, lab — the Lab's live pictures: "lanes" that keep their
+ *            worker and only ever run the newest request.
  * Compare and the check-in use their own named workers for the same jobs.
  * If workers aren't available (e.g. opening the file directly), the same code
  * runs on the page instead.
@@ -64,6 +67,10 @@
             } else if (type === 'byAge') resolve(E.successByAge(plan, opts));
             else if (type === 'levers') resolve(E.levers(plan, opts, onPartial));
             else if (type === 'explore') resolve(E[{ ss: 'ssExplorer', roth: 'rothExplorer', history: 'historyReplay', futures: 'futures' }[opts.kind]](plan, opts));
+            else if (type === 'mixPath') resolve(E.mixPath(plan));
+            else if (type === 'mixOdds') resolve(E.mixOdds(plan, opts.runs));
+            else if (type === 'map') resolve(E.decisionMap(plan, opts, (c) => onPartial && onPartial('cell', c)));
+            else if (type === 'lab') resolve(opts.kind === 'roll' ? E.rollLife(plan, opts.k) : E.ridgeline(plan));
           } catch (e) { reject(e); }
         }, 30);
         return;
@@ -120,5 +127,46 @@
     return run('explore', 'explore', plan, { kind });
   };
 
-  C.cancelSlow = () => { restart('slow'); restart('ages'); restart('cmp'); restart('levers'); restart('explore'); };
+  // Lanes: one job at a time per lane, and only the newest waiting job is kept
+  // (the rest are dropped as 'stale'). Unlike a restart, the worker keeps its
+  // memory, so a fader can be dragged without re-loading anything.
+  const lanes = {};
+  function lane(name, type, plan, opts) {
+    const L = lanes[name] || (lanes[name] = { busy: false, next: null });
+    return new Promise((resolve, reject) => {
+      if (L.next) L.next.reject(new Error('stale'));
+      L.next = { type, plan, opts, resolve, reject };
+      pump(name);
+    });
+  }
+  function pump(name) {
+    const L = lanes[name];
+    if (L.busy || !L.next) return;
+    const job = L.next;
+    L.next = null; L.busy = true;
+    const done = () => { L.busy = false; pump(name); };
+    run(name, job.type, job.plan, job.opts || {}).then((r) => { job.resolve(r); done(); }, (e) => { job.reject(e); done(); });
+  }
+
+  /** The Mixer: the typical path (quick) and the odds (slower), each newest-wins. */
+  C.mixPath = (plan) => lane('mixPath', 'mixPath', plan);
+  C.mixOdds = (plan, runs) => lane('mixOdds', 'mixOdds', plan, { runs: runs || 300 });
+  /** Roll a life / the ridgeline, newest-wins on one worker (it remembers the last plan's rankings). */
+  C.lab = (kind, plan, opts) => lane('lab', 'lab', plan, Object.assign({ kind }, opts || {}));
+
+  /**
+   * The decision map, shared out over a few workers (cells dealt round-robin,
+   * so each starts near the center). onCell(cell) as each one finishes.
+   */
+  C.decisionMap = function (plan, cells, onCell, runs) {
+    C.cancelMap();
+    const n = Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) - 1, cells.length));
+    const groups = Array.from({ length: n }, () => []);
+    cells.forEach((c, k) => groups[k % n].push(c));
+    return Promise.all(groups.map((g, w) => run('map' + w, 'map', plan, { cells: g, runs: runs || 120 }, (key, cell) => onCell(cell))))
+      .then((parts) => parts.flat());
+  };
+  C.cancelMap = () => { for (let w = 0; w < 4; w++) restart('map' + w); };
+
+  C.cancelSlow = () => { restart('slow'); restart('ages'); restart('cmp'); restart('levers'); restart('explore'); C.cancelMap(); };
 })(globalThis.RP = globalThis.RP || {});
