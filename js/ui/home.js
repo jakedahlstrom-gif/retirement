@@ -60,9 +60,11 @@
     els.ageVal = h('div.hero-num', '—');
     els.togo = h('div.hero-togo', '');
     els.ageSub = h('div.hero-meta', '');
+    els.postcardText = h('span', 'Postcard from retirement');
+    els.postcard = h('button.sky-pill.hero-postcard', { type: 'button', hidden: true, onclick: () => UI.postcard.open() }, UI.icon('mail'), els.postcardText);
     els.hero = h('div.hero-sky',
       h('div.hero-label', els.ageTitle, UI.tipButton('retireAge'), els.busy),
-      els.ageVal, els.togo, els.ageSub);
+      els.ageVal, els.togo, els.ageSub, els.postcard);
 
     // Retirement age slider
     els.ageSlider = h('input.slider', { type: 'range', min: 45, max: 65, step: 1, 'aria-label': 'Retirement age' });
@@ -122,7 +124,8 @@
     const proj = h('div.card.proj-card',
       h('div.proj-head', h('div', h('div.ph-label', els.projLabel, UI.tipButton('balRet')), els.balRet), els.balRetSub),
       els.projBox,
-      h('div.proj-legend', h('span', h('i'), 'Typical market'), h('span', h('i.band'), 'Likely range')));
+      h('div.proj-legend', h('span', h('i'), 'Typical market'), h('span', h('i.band'), 'Likely range')),
+      h('button.more-btn.proj-more', { type: 'button', onclick: () => UI.futures.open() }, 'See 100 possible futures →'));
     if (UI.projection) {
       els.chart = UI.projection.create(els.projBox, { format: (v) => fmt.money(v), onScrub: onScrub });
     }
@@ -264,8 +267,14 @@
   }
   function onScrub(info) {
     const a = Home._a;
-    if (!info || !a) { scrubbing = false; showDefaultReadout(); return; }
+    if (!info || !a) {
+      scrubbing = false; showDefaultReadout();
+      if (a) UI.sky.set(UI.sky.progressFor(UI.sky.monthsUntil(a.summary.retireYear))); // back to today's sky
+      return;
+    }
     scrubbing = true;
+    // The sky shows the hour you'd see from that year: how close retirement is then.
+    UI.sky.set(UI.sky.progressFor(Math.max(0, a.summary.retireYear - info.year) * 12));
     const P = a.plan;
     els.projLabel.textContent = `Jan 1, ${info.year} · ${P.people.p1.name} ${info.year - P.people.p1.birthYear - 1}`;
     els.balRet.textContent = fmt.money(info.p50);
@@ -297,6 +306,8 @@
     }
     if (els.chart) els.chart.update(chartData(a));
     UI.paycheck.update(a);
+    els.postcardText.textContent = `Postcard from ${s.retireYear}`;
+    els.postcard.hidden = s.retireYear <= a.schedule.y0; // only for a retirement still ahead
 
     els.summary.innerHTML = UI.insights.summary(a, Home._metrics);
     renderAlerts(a, Home._metrics);

@@ -7,6 +7,7 @@
  *                                   taxes, health costs, what's left, chance of success
  *   RP.engine.historyReplay(plan)   your retirement replayed through every stretch of real
  *                                   market history since 1871 (like FIRECalc)
+ *   RP.engine.futures(plan)         100 of the Monte Carlo's lives, whole, for drawing
  *
  * The first two compare choices on the typical-market path (fast enough to try
  * dozens), then run the Monte Carlo on the few that matter.
@@ -133,6 +134,27 @@
       };
     });
     return { strategies: out, runs, endYear: P.people[P.household.horizonPerson].birthYear + P.household.horizonAge };
+  };
+
+  // ------------------------------------------------------------ possible futures
+  /**
+   * A handful of the Monte Carlo's lives, whole: each one's savings on Jan 1
+   * of every year (starting from today) and the year it ran short, if it did.
+   * The success rate is from the full set of runs.
+   */
+  E.futures = function (rawPlan, opts) {
+    opts = opts || {};
+    const P = E.resolvePlan(rawPlan);
+    const { S, det, sepp } = typical(P, true);
+    const planPath = det.rows.map((r) => r.startTotal);
+    const mc = E.monteCarlo(P, S, { runs: P.sim.runs, planPath, sepp, keepTotals: false, paths: opts.count || 100 });
+    const start = E.portfolio(E.initState(P));
+    return {
+      years: S.years.concat([S.yEnd + 1]), // Jan 1 of each year, through the year after the plan ends
+      paths: mc.paths.map((p) => ({ values: [Math.round(start)].concat(p.totals), failYear: p.failYear })),
+      typical: [Math.round(start)].concat(det.rows.map((r) => Math.round(r.balances.total))),
+      successRate: mc.successRate, runs: mc.runs, retireYear: S.retireYear, endYear: S.yEnd,
+    };
   };
 
   // ------------------------------------------------------------ history

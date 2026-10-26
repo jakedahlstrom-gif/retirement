@@ -88,7 +88,17 @@
     const g = P.spending.guardrails;
     add(g.enabled ? 'guardrailsOff' : 'guardrailsOn', 'choice', { 'spending.guardrails.enabled': !g.enabled }, { cutPct: g.cutPct, behindPct: g.behindPct });
 
-    // A risk you don't control: every year's return 1 point lower
+    // A risk you don't control: everything invested falls 30% overnight (cash stays put)
+    const B = P.balances, keep = 0.7;
+    const invested = B.p1_401k + B.p2_401k + B.roth + B.hsa + B.brokerage;
+    if (invested > 0) {
+      add('crashNow', 'risk', {
+        'balances.p1_401k': Math.round(B.p1_401k * keep), 'balances.p2_401k': Math.round(B.p2_401k * keep),
+        'balances.roth': Math.round(B.roth * keep), 'balances.hsa': Math.round(B.hsa * keep), 'balances.brokerage': Math.round(B.brokerage * keep),
+      }, { pct: 30, loss: invested * (1 - keep) });
+    }
+
+    // Another: every year's return 1 point lower
     if (P.returns.source !== 'historical') {
       const A = P.returns.allocation;
       const o = A.enabled

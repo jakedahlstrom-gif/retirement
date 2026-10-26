@@ -172,7 +172,8 @@
 
   /**
    * Monte Carlo: run the simulation once per random return path.
-   * opts: { runs, seed, planPath, sepp, startIdx, state, keepTotals }
+   * opts: { runs, seed, planPath, sepp, startIdx, state, keepTotals,
+   *         paths (keep the first N runs' year-end totals and run-out years) }
    */
   E.monteCarlo = function (P, S, opts) {
     opts = opts || {};
@@ -186,10 +187,12 @@
     const failYears = {};
     const penalties = [];
     const balRet = [];
+    const paths = [];
     for (let r = 0; r < runs; r++) {
       const res = E.simulate(P, S, { inv: rets.inv.subarray(r * n, (r + 1) * n), cash: rets.cash }, {
         planPath: opts.planPath, sepp: opts.sepp, stopOnFail: true, startIdx: opts.startIdx, state: opts.state,
       });
+      if (r < (opts.paths || 0)) paths.push({ totals: res.totals.map(Math.round), failYear: res.failYear });
       if (res.success) successes++;
       else failYears[res.failYear] = (failYears[res.failYear] || 0) + 1;
       penalties.push(res.penaltiesTotal);
@@ -197,6 +200,7 @@
       if (keep) for (let i = 0; i < n; i++) totals[r * n + i] = res.totals[i];
     }
     const out = { runs, successRate: successes / runs, failYears };
+    if (opts.paths) out.paths = paths;
     if (keep) {
       const p10 = [], p25 = [], p50 = [], p75 = [], p90 = [];
       const col = new Float64Array(runs);
