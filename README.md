@@ -9,6 +9,38 @@ A private retirement planner that runs entirely on your phone.
 
 Plain HTML, CSS and JavaScript. No build step. Works offline once installed.
 
+## The Lab
+
+A tab of things to play with. Nothing in it changes your plan until you tap
+**Apply**, **Use** or **Save as scenario**.
+
+- **Plan score**: six rings (chance of success, spending cushion, withdrawal
+  rate, taxes in retirement, flexible money, tax diversification), a score out
+  of 100 and a grade. Tap it to see what each part means and what would raise it.
+- **The Mixer**: a little mixing desk. Faders for retirement age, spending,
+  saving, returns, market swings, Social Security age, part-time work and how
+  long to plan for; pads for guardrails, Roth conversions, long-term care, an
+  inheritance, a crash at retirement and a lost decade. A needle gauge shows
+  the chance of success and a glowing scope redraws the typical path as you
+  drag (your plan stays behind it as a dashed ghost). Drag a fader's cap, tap
+  its track, or double-tap to reset it.
+- **Decision map**: retirement age × spending as a smooth heat map of success,
+  with a bright line along your target. It's calculated on several background
+  workers at once and fills in from your own square outward. Tap a square to
+  use it.
+- **Money buckets**: your accounts as jars of liquid, played year by year.
+  Savings drip in, withdrawals drain out, conversions pour from pre-tax to Roth.
+- **Roll a life**: one of the 1,000 market histories behind your chance of
+  success, drawn year by year and told as a story, with how lucky it was.
+- **Range of outcomes**: a ridgeline of where your savings could be at each
+  age, on a log scale, in color or as white "Pulsar" lines on black.
+- **Life in years**: your lives as dots (or weeks), colored by phase.
+- **Future prices**: everyday things on price tags in any future year at your
+  inflation assumption, to make "today's dollars" concrete.
+
+Engine: `js/engine/lab.js`. Screens: `js/ui/lab.js`, `mixer.js`, `score.js`,
+`decision.js`, `buckets.js`, `dice.js`, `ridge.js`, `lifegrid.js`.
+
 ## Finding your levers
 
 - **Earliest age**, under the retirement slider on Home: the youngest age that
@@ -70,7 +102,7 @@ Engine: `js/engine/explore.js`. Screens: `js/ui/explore.js`.
 Plan › Export backup saves everything as a `.json` file (import it on any
 device). If you've changed the plan and haven't backed up for a month, Home
 reminds you. Plan › Year-by-year spreadsheet exports the projection as `.csv`.
-Plan › Appearance pins light or dark mode.
+Plan › Appearance picks the sky scene and pins light or dark mode.
 
 ## The sky
 
@@ -81,6 +113,12 @@ sun cresting the horizon, and retirement itself is golden hour. Move the
 retirement-age slider and the sky moves with it. The scale lives in
 `js/ui/sky.js` (`Sky.SPAN_YEARS`). With "Reduce motion" on, the stars and water
 hold still and the sky changes without gliding.
+
+Plan › Appearance also offers three night scenes that tell the same countdown
+their own way, each with its own accent colors: **Aurora** (northern lights
+that strengthen over a mountain lake), **Synthwave** (a striped neon sun rising
+over a moving grid) and **Nebula** (drifting gas clouds and a star rising over
+a planet's rim). They always use the dark look.
 
 ## App icons
 

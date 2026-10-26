@@ -2,6 +2,9 @@
  * worker.js — runs the math engine in a background thread (a "Web Worker"),
  * so sliders and scrolling stay smooth while 1,000 simulations run.
  *
+ * Jobs: analyze, metrics, byAge, explore, levers, and the Lab's mixPath,
+ * mixOdds, map and lab.
+ *
  * Messages in:  { id, type, plan, opts }
  * Messages out: { id, result } | { id, partial, key, value } | { id, error }
  */
@@ -9,7 +12,7 @@
 importScripts(
   'engine/util.js', '../data/historical-returns.js', 'engine/defaults.js', 'engine/tax.js',
   'engine/socialsecurity.js', 'engine/health.js', 'engine/schedule.js', 'engine/simulate.js',
-  'engine/montecarlo.js', 'engine/api.js', 'engine/scenarios.js', 'engine/slim.js', 'engine/levers.js', 'engine/explore.js'
+  'engine/montecarlo.js', 'engine/api.js', 'engine/scenarios.js', 'engine/slim.js', 'engine/levers.js', 'engine/explore.js', 'engine/lab.js'
 );
 
 const RP = self.RP;
@@ -45,6 +48,19 @@ self.onmessage = function (ev) {
       // One message per lever, so the list fills in as results arrive.
       const res = RP.engine.levers(plan, opts || {}, (key, value) => self.postMessage({ id, partial: true, key, value }));
       self.postMessage({ id, result: res });
+    } else if (type === 'mixPath') {
+      self.postMessage({ id, result: RP.engine.mixPath(plan) });
+    } else if (type === 'mixOdds') {
+      self.postMessage({ id, result: RP.engine.mixOdds(plan, opts && opts.runs) });
+    } else if (type === 'map') {
+      // Decision map: one message per cell, so the map fills in.
+      const res = RP.engine.decisionMap(plan, opts || {}, (cell) => self.postMessage({ id, partial: true, key: 'cell', value: cell }));
+      self.postMessage({ id, result: res });
+    } else if (type === 'lab') {
+      // The Lab's heavier pictures: opts.kind = 'roll' | 'ridge'
+      const r = opts && opts.kind === 'roll' ? RP.engine.rollLife(plan, opts.k) : opts && opts.kind === 'ridge' ? RP.engine.ridgeline(plan) : null;
+      if (!r) throw new Error('Unknown lab job ' + (opts && opts.kind));
+      self.postMessage({ id, result: r });
     } else {
       throw new Error('Unknown job ' + type);
     }

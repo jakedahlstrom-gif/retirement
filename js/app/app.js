@@ -1,11 +1,11 @@
 /*
  * app.js — starts the app and keeps everything in sync:
  *   - loads your saved plan (or the sample), raises the sky, asks for the PIN
- *   - switches between the five tabs
+ *   - switches between the six tabs
  *   - whenever an input changes: refreshes the screen right away, then asks
  *     the background worker for new results and animates them in
  *   - import / export of plan files, and the year-by-year spreadsheet
- *   - light / dark appearance
+ *   - appearance: light / dark, and the sky scene
  *   - registers the service worker so the app works offline
  */
 (function (RP) {
@@ -18,6 +18,7 @@
     { key: 'home', label: 'Home', icon: 'home', title: 'Home' },
     { key: 'timeline', label: 'Timeline', icon: 'timeline', title: 'Timeline' },
     { key: 'compare', label: 'Compare', icon: 'compare', title: 'Compare' },
+    { key: 'lab', label: 'Lab', icon: 'flask', title: 'Lab' },
     { key: 'plan', label: 'Plan', icon: 'plan', title: 'Plan' },
     { key: 'checklist', label: 'Checklist', icon: 'check', title: 'Checklist' },
   ];
@@ -25,6 +26,7 @@
   const views = {};
   let topbar, titleEl, pill;
   App.last = null; // latest analysis of the active scenario
+  App.metrics = {}; // its safe spending, earliest age, green light and Coast FIRE, as they arrive
 
   // ------------------------------------------------------------------ layout
   function buildShell() {
@@ -64,6 +66,7 @@
     else if (key === 'compare') UI.compare ? UI.compare.render(views.compare) : placeholder(views.compare, 'Compare', 'Charts arrive in the next stage.');
     else if (key === 'timeline') UI.timeline ? UI.timeline.render(views.timeline, App.last) : placeholder(views.timeline, 'Timeline', 'Coming soon.');
     else if (key === 'checklist') UI.checklist ? UI.checklist.render(views.checklist) : placeholder(views.checklist, 'Checklist', 'Coming soon.');
+    else if (key === 'lab') UI.lab.render(views.lab);
   }
   function placeholder(el, title, text) { UI.mount(el, h('h1.large-title', title), h('div.card', h('p.muted', text))); }
 
@@ -77,6 +80,7 @@
       UI.home.setBusy(false);
       if (tab === 'timeline' && UI.timeline) UI.timeline.render(views.timeline, a);
       if (UI.compare && UI.compare.onActiveResult) UI.compare.onActiveResult(a);
+      if (tab === 'lab') UI.lab.onResult(a);
       runMetrics();
     }).catch((e) => { if (e.message !== 'stale') { console.error(e); UI.home.setBusy(false); } });
   }, 140);
@@ -84,9 +88,12 @@
   const runMetrics = UI.debounce(() => {
     const plan = store.activePlan();
     UI.home.clearMetrics();
+    App.metrics = {};
     RP.engineClient.metrics(plan, ['safe', 'earliest', 'green', 'coast'], (key, value) => {
+      App.metrics[key] = value;
       UI.home.metricsArrived(key);
       UI.home.updateMetrics({ [key]: value });
+      if (tab === 'lab') UI.lab.onMetrics(key);
     }).then(() => UI.levers.refresh())
       .catch((e) => { if (e.message !== 'cancelled') console.error(e); });
   }, 500);
@@ -192,18 +199,24 @@
   };
 
   // ------------------------------------------------------------- appearance
-  /** Auto follows the phone; Light or Dark pins it. */
+  /** Auto follows the phone; Light or Dark pins it. Night scenes (Aurora, Synthwave, Nebula) are always dark. */
   function themeAttr() {
-    const t = store.state.settings.theme;
-    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
-    else delete document.documentElement.dataset.theme;
+    const root = document.documentElement;
+    const { theme: t, scene } = store.state.settings;
+    const night = scene && scene !== 'horizon' && UI.sky.SCENES.some((s) => s.key === scene);
+    if (night) root.dataset.scene = scene; else delete root.dataset.scene;
+    if (night) root.dataset.theme = 'dark';
+    else if (t === 'light' || t === 'dark') root.dataset.theme = t;
+    else delete root.dataset.theme;
   }
-  App.setTheme = function (t) {
-    store.updateSettings({ theme: t });
+  function restyle() {
     themeAttr();
     UI.sky.repaint();
     UI.charts.applyTheme();
-  };
+    UI.lab.repaint();
+  }
+  App.setTheme = function (t) { store.updateSettings({ theme: t }); restyle(); };
+  App.setScene = function (s) { store.updateSettings({ scene: s }); restyle(); };
 
   /** Ask the browser not to clear this site's storage when space runs low (once, for a real plan). */
   let persistAsked = false;

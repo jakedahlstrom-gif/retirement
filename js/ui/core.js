@@ -91,6 +91,16 @@
     trend: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
     book: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19"/>',
     mail: '<rect x="3.5" y="6" width="17" height="12" rx="2.5"/><path d="m4.5 7.5 7.5 5.5 7.5-5.5"/>',
+    flask: '<path d="M9.5 3.5h5M10.5 3.5v5.2L5 18.2A1.8 1.8 0 0 0 6.6 21h10.8a1.8 1.8 0 0 0 1.6-2.8l-5.5-9.5V3.5"/><path d="M7.4 14h9.2"/>',
+    dice: '<rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="8.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.1" fill="currentColor"/>',
+    grid: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16"/>',
+    jar: '<path d="M8 3.5h8M8.5 3.5v2.5C6.5 7 5.5 8.6 5.5 11v7.5A2 2 0 0 0 7.5 20.5h9a2 2 0 0 0 2-2V11c0-2.4-1-4-3-5V3.5"/><path d="M5.5 13.5c2.2-1.2 4.3 1.2 6.5 0s4.3-1.2 6.5 0"/>',
+    ridge: '<path d="M3 9c3 0 4-4 6-4s3 4 6 4 4-1 6-1"/><path d="M3 14c3 0 4-3 6-3s3 3 6 3 4-1 6-1"/><path d="M3 19c3 0 4-3 6-3s3 3 6 3 4-1 6-1"/>',
+    dots: '<circle cx="6" cy="6" r="1.3"/><circle cx="12" cy="6" r="1.3"/><circle cx="18" cy="6" r="1.3"/><circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3" fill="currentColor"/><circle cx="6" cy="18" r="1.3" fill="currentColor"/><circle cx="12" cy="18" r="1.3" fill="currentColor"/><circle cx="18" cy="18" r="1.3" fill="currentColor"/>',
+    tag: '<path d="M3.5 12.5V4.5h8l9 9-8 8z"/><circle cx="8" cy="9" r="1.4"/>',
+    play: '<path d="M8 5.5v13l10.5-6.5z"/>',
+    pause: '<path d="M8.5 5.5v13M15.5 5.5v13"/>',
+    rings: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="2.5"/>',
   };
   UI.icon = function (name, cls) {
     const span = document.createElement('span');

@@ -43,7 +43,7 @@
       checklist: DEFAULT_CHECKLIST.map((c, i) => ({ id: 'c' + i, ...c })),
       history: [],
       // changedSince/backupKey/lastBackup drive the backup reminder; leversOpen remembers that Home card.
-      settings: { pinHash: null, pinSalt: null, pinAsked: false, theme: 'auto', changedSince: null, backupKey: null, lastBackup: null, leversOpen: false },
+      settings: { pinHash: null, pinSalt: null, pinAsked: false, theme: 'auto', scene: 'horizon', changedSince: null, backupKey: null, lastBackup: null, leversOpen: false },
     };
   }
 

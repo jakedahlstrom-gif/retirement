@@ -72,7 +72,7 @@
       h('div.list', UI.explore.rows(sc.id)),
       h('div.section-label', 'Settings'),
       h('div.list',
-        UI.row({ label: 'Appearance', value: THEMES.find((t) => t.value === (stt.theme || 'auto')).label, onClick: themeSheet }),
+        UI.row({ label: 'Appearance', value: appearanceLabel(stt), onClick: themeSheet }),
         UI.row({ label: 'PIN lock', value: stt.pinHash ? 'On' : 'Off', onClick: () => RP.pin.settings() })),
       h('div.section-label', 'Data & privacy'),
       h('div.list',
@@ -123,15 +123,30 @@
 
   // ---------------------------------------------------------------- appearance
   const THEMES = [{ value: 'auto', label: 'Automatic' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }];
+  const sceneOf = (stt) => UI.sky.SCENES.find((s) => s.key === stt.scene) || UI.sky.SCENES[0];
+  function appearanceLabel(stt) {
+    const s = sceneOf(stt);
+    return s.key === 'horizon' ? THEMES.find((t) => t.value === (stt.theme || 'auto')).label : s.label;
+  }
+  /** Scene cards (a little painted preview each), then light/dark for the Horizon scene. */
   function themeSheet() {
-    UI.sheet.open({
-      title: 'Appearance',
-      body: [
-        UI.segmented({ options: THEMES, value: store().state.settings.theme || 'auto', onChange: (t) => { RP.app.setTheme(t); Plan.render(); } }),
-        h('p.tip-text.muted', { style: { marginTop: '14px', fontSize: '14px' } }, 'Automatic follows your phone’s light or dark setting. The sky keeps its time of day either way.'),
-      ],
-      actions: [{ label: 'Done', primary: true, onClick: () => UI.sheet.close() }],
-    });
+    const body = h('div');
+    const paint = () => {
+      const stt = store().state.settings, cur = sceneOf(stt);
+      UI.mount(body,
+        h('div.scene-grid', { role: 'radiogroup', 'aria-label': 'Sky scene' }, UI.sky.SCENES.map((s) =>
+          h(s.key === cur.key ? 'button.scene-card.on' : 'button.scene-card', {
+            role: 'radio', 'aria-checked': String(s.key === cur.key),
+            onclick: () => { if (s.key !== cur.key) { RP.app.setScene(s.key); paint(); Plan.render(); } },
+          }, h('span.scene-art.scene-' + s.key, h('i')), h('b', s.label), h('small', s.sub)))),
+        cur.key === 'horizon'
+          ? [h('div.subhead', { style: { margin: '18px 0 8px' } }, 'Light or dark'),
+            UI.segmented({ options: THEMES, value: stt.theme || 'auto', onChange: (t) => { RP.app.setTheme(t); Plan.render(); } }),
+            h('p.tip-text.muted', { style: { marginTop: '14px', fontSize: '14px' } }, 'Automatic follows your phone’s light or dark setting. The sky keeps its time of day either way.')]
+          : h('p.tip-text.muted', { style: { marginTop: '14px', fontSize: '14px' } }, 'Night scenes always use the dark look. Like the Horizon, each one brightens as retirement gets closer.'));
+    };
+    paint();
+    UI.sheet.open({ title: 'Appearance', body, actions: [{ label: 'Done', primary: true, onClick: () => UI.sheet.close() }] });
   }
 
   function renderGroup(g, P, sc, color) {
