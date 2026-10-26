@@ -41,7 +41,7 @@
   };
 
   /** Replace an element's children. */
-  UI.mount = function (el, ...kids) { el.replaceChildren(); kids.flat().forEach((k) => k && el.appendChild(k)); return el; };
+  UI.mount = function (el, ...kids) { el.replaceChildren(); kids.flat(Infinity).forEach((k) => k && el.appendChild(k)); return el; };
 
   // --- Icons: 24×24, 1.6px strokes, round caps -------------------------------
   const P = {
