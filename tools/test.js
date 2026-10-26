@@ -17,9 +17,9 @@ globalThis.RP = {};
 for (const f of [
   'js/engine/util.js', 'data/historical-returns.js', 'js/engine/defaults.js', 'js/engine/tax.js',
   'js/engine/socialsecurity.js', 'js/engine/health.js', 'js/engine/schedule.js', 'js/engine/simulate.js',
-  'js/engine/montecarlo.js', 'js/engine/api.js', 'js/engine/scenarios.js', 'js/engine/slim.js', 'js/engine/levers.js',
-  // UI helpers that don't touch the page, for the setup guide's plan builder
-  'js/ui/core.js', 'js/ui/setup.js',
+  'js/engine/montecarlo.js', 'js/engine/api.js', 'js/engine/scenarios.js', 'js/engine/slim.js', 'js/engine/levers.js', 'js/engine/explore.js',
+  // UI helpers that don't touch the page: the setup guide's plan builder, the cash-flow groups
+  'js/ui/core.js', 'js/ui/setup.js', 'js/ui/flow.js',
 ]) require(path.join(ROOT, f));
 const E = RP.engine;
 
@@ -125,6 +125,48 @@ test('the setup guide builds a complete plan of your own', () => {
   const a = E.analyze(P, { runs: RUNS });
   assert.strictEqual(a.summary.retireYear, 1984 + 57 + 1);
   assert.ok(a.det.rows.some((r) => r.taxes.state > 0));
+});
+
+console.log('Deep dives');
+test('Social Security explorer covers every pair and its best beats or ties yours', () => {
+  const ss = E.ssExplorer(base, { runs: 100 });
+  assert.strictEqual(ss.cells.length, ss.ages.p1.length * ss.ages.p2.length);
+  assert.deepStrictEqual([ss.current.p1, ss.current.p2], [base.ss.p1.claimAge, base.ss.p2.claimAge]);
+  assert.ok(ss.best.failYear != null || ss.best.end >= ss.current.end - 1);
+  assert.ok(ss.cells.every((c) => c.lifetime > 0));
+});
+
+test('someone already collecting keeps their claiming age', () => {
+  const ss = E.ssExplorer({ people: { p1: { birthYear: 1955 } }, ss: { p1: { claimAge: 66 } } }, { runs: 50 });
+  assert.deepStrictEqual(ss.ages.p1, [66]);
+});
+
+test('Roth explorer compares strategies, with yours marked once', () => {
+  const ro = E.rothExplorer(base, { runs: 100 });
+  assert.strictEqual(ro.strategies.filter((s) => s.current).length, 1);
+  const none = ro.strategies.find((s) => s.key === 'none');
+  assert.strictEqual(Math.round(none.converted), 0);
+  for (const s of ro.strategies) assert.ok(Math.abs(s.afterTaxEnd - (s.end - s.preTaxEnd * E.HEIR_TAX)) < 1e-6);
+});
+
+test('history replay uses every complete stretch, and "your returns" averages your assumption', () => {
+  const hr = E.historyReplay(base);
+  const n = RP.HISTORICAL_RETURNS.length;
+  assert.strictEqual(hr.actual.runs.length, n - hr.span + 1);
+  assert.strictEqual(hr.matched.runs[0].start, RP.HISTORICAL_RETURNS[0][0]);
+  assert.ok(hr.histReturn > hr.planReturn, 'history should beat a 4% assumption for an 80/20 mix');
+  assert.ok(hr.matched.successRate <= hr.actual.successRate);
+});
+
+test('each year’s cash flow balances: money in equals money out', () => {
+  for (const raw of [{}, { jobLoss: { p1: { enabled: true } }, college: { enabled: true }, mortgage: { enabled: true }, spending: { oneTime: [{ year: 2031, amount: 40000, kind: 'windfall' }] } }]) {
+    const a = E.slim(E.analyze(raw, { mc: false }));
+    for (const r of a.rows) {
+      const { ins, outs } = RP.ui.flow.items(r, a.plan);
+      const sum = (l) => l.reduce((t, x) => t + x.value, 0);
+      assert.ok(Math.abs(sum(ins) - sum(outs)) < 2, `${r.year}: in ${sum(ins)} vs out ${sum(outs)}`);
+    }
+  }
 });
 
 console.log(failed ? `\n${failed} failed` : '\nAll passed');

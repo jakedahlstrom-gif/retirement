@@ -597,6 +597,21 @@ body.locked .app, body.locked .tabbar, body.locked .sheet:not(.over-lock), body.
 .alert .a-fix { font-size: 13px; color: var(--accent); margin-top: 5px; font-weight: 600; }
 .more-btn { width: 100%; padding: 12px 0 2px; font-size: 14px; font-weight: 600; color: var(--accent); text-align: left; border-top: 0.5px solid var(--line-strong); }
 
+/* Retirement paycheck */
+.pc-card .seg { margin-bottom: 14px; }
+.pc-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.pc-head .value-lg small { font-size: 18px; font-weight: 300; margin-left: 2px; letter-spacing: 0; }
+.pc-side { text-align: right; }
+.pc-tax { font-size: 17px; font-variant-numeric: tabular-nums; color: var(--fg-2); }
+.pc-bar { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; margin: 16px 0 10px; }
+.pc-bar span { min-width: 3px; }
+.pc-list { display: grid; gap: 7px; margin-bottom: 4px; }
+.pc-item { display: flex; align-items: center; gap: 9px; font-size: 14.5px; }
+.pc-dot { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+.pc-name { flex: 1; min-width: 0; color: var(--fg-2); }
+.pc-val { font-variant-numeric: tabular-nums; color: var(--fg); }
+.pc-card .more-btn { margin-top: 10px; }
+
 /* Earliest retirement age, under the slider */
 .earliest { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 12px; border-top: 0.5px solid var(--line-strong); font-size: 15px; transition: opacity .3s; }
 .earliest .e-label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
@@ -739,6 +754,58 @@ body.locked .app, body.locked .tabbar, body.locked .sheet:not(.over-lock), body.
 .sheet-body .row { padding-left: 2px; padding-right: 2px; }
 .sheet-body .card .row, .sheet-body .list .row { padding-left: 14px; padding-right: 14px; }
 
+/* ---------------------------------------------------- Deep dives (explorers) */
+.x-head { margin-bottom: 8px; }
+.x-wait { display: flex; align-items: center; gap: 10px; padding: 30px 0; justify-content: center; color: var(--muted); font-size: 14px; }
+.x-wait .busy-dot { opacity: 1; animation: pulse 1s infinite; margin: 0; }
+.x-note { font-size: 13.5px; line-height: 1.5; color: var(--muted); margin: 8px 2px 12px; }
+.x-title { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-weight: 600; font-size: 16px; }
+.x-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.x-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.x-stat .label { font-size: 12px; }
+.x-val { font-family: var(--font-display); font-weight: 400; font-size: 19px; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; margin-top: 1px; }
+.x-val.pos, .row-value.x-pos { color: var(--pos); }
+.x-val.neg, .row-value.x-bad { color: var(--bad); }
+.x-detail { margin-top: 14px; padding: 14px; border-radius: 18px; background: var(--inset); border: 1px solid var(--line); }
+.x-card { padding: 14px 16px !important; }
+.x-card.mine { border-color: var(--accent-glow) !important; }
+.x-spark { display: flex; align-items: flex-end; gap: 1px; height: 30px; margin-top: 12px; border-bottom: 1px solid var(--line-strong); }
+.x-spark span { flex: 1; min-width: 1px; background: var(--accent-fill); border-radius: 1px 1px 0 0; opacity: .8; }
+.x-hero { display: flex; align-items: center; gap: 16px; margin: 16px 2px 8px; }
+.x-chart { position: relative; height: 200px; margin: 6px 0 4px; }
+.x-sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+/* Social Security heat map: rows = person 1's age, columns = person 2's */
+.ss-axes { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin: 4px 2px 6px; }
+.ss-grid { display: grid; gap: 3px; align-items: center; }
+.ss-col, .ss-row { font-size: 11px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+.ss-row { padding-right: 4px; }
+.ss-cell { aspect-ratio: 1; border-radius: 7px; display: grid; place-items: center; font-size: 12px; color: var(--fg); border: 1px solid var(--line); transition: transform .15s var(--ease-spring); }
+.ss-cell.on { outline: 2px solid var(--fg); outline-offset: 1px; }
+.ss-cell:active { transform: scale(.92); }
+.ss-legend { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin: 10px 2px 0; flex-wrap: wrap; }
+.ss-legend .lg { display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; }
+.ss-scale { flex: 1; min-width: 60px; height: 6px; border-radius: 3px; background: linear-gradient(to right, color-mix(in srgb, var(--warn) 58%, transparent), var(--inset-2), color-mix(in srgb, var(--pos) 72%, transparent)); }
+
+/* Progress */
+.pg-hero { margin: 4px 2px 6px; }
+.pg-hero .value-sub + .value-sub { margin-top: 2px; }
+.pg-dash { display: inline-block; width: 16px; height: 0; border-top: 1.5px dashed var(--accent); }
+
+/* Cash flow: one year as a flow diagram */
+.flow-card { padding: 14px 12px 8px !important; }
+.flow { display: block; width: 100%; height: auto; overflow: visible; }
+.flow-ribbon { opacity: .3; }
+.flow-hub { fill: var(--fg-2); opacity: .55; }
+.flow-label { font-size: 10.5px; paint-order: stroke; stroke: var(--card-2); stroke-width: 2.5px; stroke-opacity: .8; stroke-linejoin: round; }
+.flow-name { fill: var(--fg); font-weight: 500; }
+.flow-value { fill: var(--muted); font-variant-numeric: tabular-nums; }
+.flow-axis { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); padding: 6px 2px 0; text-transform: uppercase; letter-spacing: .06em; }
+.yr-nav { display: flex; justify-content: space-between; margin: -2px 0 12px; }
+.yr-nav .btn { height: 34px; padding: 0 12px; gap: 4px; }
+.yr-nav .btn:disabled { opacity: .35; }
+.yr-nav svg { width: 14px; height: 14px; }
+.flip { transform: rotate(180deg); }
+
 /* ---------------------------------------------------- Timeline */
 .phasebar { display: flex; gap: 3px; height: 12px; border-radius: 6px; overflow: hidden; margin: 6px 0 16px; }
 .phase { min-width: 4px; }
@@ -751,7 +818,9 @@ body.locked .app, body.locked .tabbar, body.locked .sheet:not(.over-lock), body.
 .gap-note { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; padding: 12px 14px; border-radius: 16px; background: var(--accent-soft); font-size: 14px; line-height: 1.45; color: var(--fg-2); }
 .gap-note svg { width: 18px; height: 18px; flex: none; color: var(--accent); margin-top: 1px; }
 .tl { position: relative; }
-.tl-item { display: grid; grid-template-columns: 46px 30px 1fr; gap: 0 10px; position: relative; padding-bottom: 20px; }
+.tl-item { display: grid; grid-template-columns: 46px 30px 1fr; gap: 0 10px; position: relative; padding-bottom: 20px; cursor: pointer; border-radius: 14px; transition: background .18s; }
+.tl-item:active .tl-body { opacity: .7; }
+.tl-hint { font-size: 12.5px; color: var(--muted); text-align: center; margin: 4px 0 0; }
 .tl-item::before { content: ""; position: absolute; left: 70px; top: 28px; bottom: -2px; width: 1.5px; background: linear-gradient(to bottom, var(--line-strong), var(--line)); }
 .tl-item:last-child::before { display: none; }
 .tl-item.same { padding-top: 0; }

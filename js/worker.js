@@ -9,7 +9,7 @@
 importScripts(
   'engine/util.js', '../data/historical-returns.js', 'engine/defaults.js', 'engine/tax.js',
   'engine/socialsecurity.js', 'engine/health.js', 'engine/schedule.js', 'engine/simulate.js',
-  'engine/montecarlo.js', 'engine/api.js', 'engine/scenarios.js', 'engine/slim.js', 'engine/levers.js'
+  'engine/montecarlo.js', 'engine/api.js', 'engine/scenarios.js', 'engine/slim.js', 'engine/levers.js', 'engine/explore.js'
 );
 
 const RP = self.RP;
@@ -36,6 +36,11 @@ self.onmessage = function (ev) {
     } else if (type === 'byAge') {
       const res = RP.engine.successByAge(plan, opts || {});
       self.postMessage({ id, result: res });
+    } else if (type === 'explore') {
+      // Deep dives: opts.kind = 'ss' | 'roth' | 'history'
+      const fn = { ss: 'ssExplorer', roth: 'rothExplorer', history: 'historyReplay' }[opts && opts.kind];
+      if (!fn) throw new Error('Unknown explorer ' + (opts && opts.kind));
+      self.postMessage({ id, result: RP.engine[fn](plan, opts) });
     } else if (type === 'levers') {
       // One message per lever, so the list fills in as results arrive.
       const res = RP.engine.levers(plan, opts || {}, (key, value) => self.postMessage({ id, partial: true, key, value }));

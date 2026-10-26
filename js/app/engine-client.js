@@ -7,6 +7,7 @@
  *            light, Coast FIRE). Restarted whenever inputs change, so it never
  *            wastes time on stale numbers.
  *   levers — "what moves the needle" (only while that card is open). Same rule.
+ *   explore — the deep dives (Social Security, Roth conversions, history). Same rule.
  * Compare and the check-in use their own named workers for the same jobs.
  * If workers aren't available (e.g. opening the file directly), the same code
  * runs on the page instead.
@@ -62,6 +63,7 @@
               resolve(out);
             } else if (type === 'byAge') resolve(E.successByAge(plan, opts));
             else if (type === 'levers') resolve(E.levers(plan, opts, onPartial));
+            else if (type === 'explore') resolve(E[{ ss: 'ssExplorer', roth: 'rothExplorer', history: 'historyReplay' }[opts.kind]](plan, opts));
           } catch (e) { reject(e); }
         }, 30);
         return;
@@ -112,5 +114,11 @@
     return run('levers', 'levers', plan, { runs: runs || 400 }, onPartial);
   };
 
-  C.cancelSlow = () => { restart('slow'); restart('ages'); restart('cmp'); restart('levers'); };
+  /** A deep dive ('ss' | 'roth' | 'history'). Opening another one cancels the last. */
+  C.explore = function (kind, plan) {
+    restart('explore');
+    return run('explore', 'explore', plan, { kind });
+  };
+
+  C.cancelSlow = () => { restart('slow'); restart('ages'); restart('cmp'); restart('levers'); restart('explore'); };
 })(globalThis.RP = globalThis.RP || {});

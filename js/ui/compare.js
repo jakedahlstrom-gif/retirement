@@ -90,6 +90,8 @@
       els.track, els.dots, els.hint,
       h('div.section-label', 'Summary'),
       els.table,
+      h('div.section-label', 'Deep dives'),
+      h('div.list', UI.explore.rows(f.id)),
       h('p.footer-note', 'Results are educational estimates, not financial advice.'));
     requestAnimationFrame(() => { els.track.scrollLeft = slide * els.track.clientWidth; paintDots(); });
     load();
@@ -273,14 +275,21 @@
     const capTxt = r.health.lines && ['mncare', 'aca'].includes(r.capKind)
       ? `${fmt.money(r.magi)} of the ${fmt.money(r.capKind === 'mncare' ? r.health.lines.mncare : r.health.lines.aca)} ${r.capKind === 'mncare' ? 'MinnesotaCare' : 'ACA'} line`
       : fmt.money(r.magi);
+    // Step through the years without closing the sheet
+    const first = a.rows[0].year, last = a.rows[a.rows.length - 1].year;
+    const step = (d, label) => h('button.btn.small' + (d < 0 ? '.yr-prev' : '.yr-next'), { disabled: year + d < first || year + d > last, onclick: () => Cmp.showYear(a, year + d, sc), 'aria-label': `${label}: ${year + d}` },
+      d < 0 ? [UI.icon('chevron', 'flip'), String(year + d)] : [String(year + d), UI.icon('chevron')]);
     UI.sheet.open({
       title: `${year}`,
       body: [
+        h('div.yr-nav', step(-1, 'Previous year'), step(1, 'Next year')),
         h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' } },
           h('span.pill', { style: { color: `var(--s${sc.color})` } }, sc.name),
           h('span.pill', `${P.people.p1.name} ${r.ages.p1}${r.alive.p1 ? '' : ' †'} · ${P.people.p2.name} ${r.ages.p2}${r.alive.p2 ? '' : ' †'}`),
           h('span.pill' + (r.working ? '' : '.accent'), r.working ? 'Working' : 'Retired'),
           h('span.pill', statusName)),
+        h('div.subhead', { style: { padding: '8px 2px 4px' } }, 'Where the money went'),
+        h('div.card.flow-card', UI.flow.diagram(r, P), h('div.flow-axis', h('span', 'In'), h('span', 'Out'))),
         h('div.subhead', { style: { padding: '8px 2px 4px' } }, 'Money in'), h('div.list', inn),
         h('div.subhead', { style: { padding: '8px 2px 4px' } }, 'Money out'), h('div.list', out),
         h('div.subhead', { style: { padding: '8px 2px 4px' } }, 'Income & conversions'),

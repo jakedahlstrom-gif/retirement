@@ -137,15 +137,18 @@
     els.alerts = h('div');
     els.milestone = h('div');
     els.levers = UI.levers.build();
+    els.paycheck = UI.paycheck.build();
 
     // Order: when you retire → the big lever → where you stand → the path →
-    // what needs attention → what would help → details on demand → what's next.
+    // what retirement pays → what needs attention → what would help →
+    // details on demand → what's next.
     UI.mount(root,
       els.hero,
       retire,
       els.sampleBanner,
       duo,
       proj,
+      els.paycheck,
       els.alerts,
       els.levers,
       els.more,
@@ -293,6 +296,7 @@
       els.balRetSub.textContent = `Jan 1, ${s.retireYear}`;
     }
     if (els.chart) els.chart.update(chartData(a));
+    UI.paycheck.update(a);
 
     els.summary.innerHTML = UI.insights.summary(a, Home._metrics);
     renderAlerts(a, Home._metrics);

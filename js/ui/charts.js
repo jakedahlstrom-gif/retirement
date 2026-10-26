@@ -408,6 +408,55 @@
     return { type: 'line', data: { datasets }, options: o };
   };
 
+  /**
+   * Replay history: one bar per start year, the money left at the end. Start
+   * years that run short get a coral stub, so they stand out at a glance.
+   * input = { runs: [{ start, success, failYear, end }], color }
+   */
+  B.history = function (inp) {
+    const runs = inp.runs;
+    const max = Math.max(1, ...runs.map((r) => r.end));
+    const stub = max * 0.035;
+    const good = C.css('--pos'), bad = C.css('--bad');
+    const o = baseOptions({ xType: 'category', mode: 'index', offsetX: true, yMax: niceCeil(max * 1.08), xTicks: 7, valFmt: moneyTick, titleFmt: (it) => `Retire into ${runs[it.dataIndex].start}` });
+    o.scales.x.ticks.callback = function (v) { const y = runs[v] && runs[v].start; return y % 20 === 0 ? String(y) : ''; };
+    o.scales.x.ticks.autoSkip = false;
+    o.scales.x.ticks.maxRotation = 0;
+    o.plugins.tooltip.callbacks.label = (it) => { const r = runs[it.dataIndex]; return r.success ? ` ${fmt.money(r.end)} left at the end` : ` Runs short in ${r.failYear}`; };
+    o.plugins.rpOverlay.crosshair = false;
+    return {
+      type: 'bar',
+      data: {
+        labels: runs.map((r) => String(r.start)),
+        datasets: [{ label: 'Left at the end', data: runs.map((r) => (r.success ? r.end : stub)), backgroundColor: runs.map((r) => (r.success ? C.alpha(good, 0.75) : bad)), borderRadius: 2, barPercentage: 0.9, categoryPercentage: 1 }],
+      },
+      options: o,
+    };
+  };
+
+  /**
+   * Progress: the path your first tracked plan expected (dashed) and where
+   * your savings actually were (dots). input = { expected: [{x, y}], actual: [{x, y, label}] }
+   */
+  B.progress = function (inp) {
+    const acc = C.css('--accent'), pos = C.css('--pos');
+    const xs = inp.expected.map((p) => p.x).concat(inp.actual.map((p) => p.x));
+    const o = baseOptions({ mode: 'nearest', beginAtZero: false, xMin: Math.floor(Math.min(...xs)), xMax: Math.ceil(Math.max(...xs)), xTicks: 5,
+      titleFmt: (it) => it.raw.label || `Expected, ${fmt.date(new Date(Date.UTC(Math.floor(it.parsed.x), Math.round((it.parsed.x % 1) * 12), 1)).toISOString().slice(0, 10)).replace(/ 1,/, '')}` });
+    o.plugins.tooltip.callbacks.label = (it) => ` ${it.dataset.label}: ${fmt.money(it.parsed.y)}`;
+    o.plugins.rpOverlay.crosshair = false;
+    return {
+      type: 'line',
+      data: {
+        datasets: [
+          { label: 'Plan expected', data: inp.expected, borderColor: C.alpha(acc, 0.85), borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, tension: 0.2, order: 2 },
+          { label: 'Your savings', data: inp.actual, borderColor: pos, backgroundColor: pos, pointBackgroundColor: pos, pointBorderColor: C.css('--card'), pointBorderWidth: 2, pointRadius: 5.5, pointHoverRadius: 7, borderWidth: 2, tension: 0, order: 1 },
+        ],
+      },
+      options: o,
+    };
+  };
+
   function short(name, n) { n = n || 18; return name.length > n ? name.slice(0, n - 1) + '…' : name; }
   C.short = short;
 })(globalThis.RP = globalThis.RP || {});

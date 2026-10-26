@@ -81,7 +81,8 @@
       const prev = st.history.length ? st.history[st.history.length - 1] : (before ? { date: 'before', summary: before } : null);
       RP.engineClient.analyze(store().planFor('base'), {}, 'checkin').then((a) => RP.engineClient.metricsOn('checkin', a.plan, ['safe'], null, 300).then((m) => ({ a, m }))).then(({ a, m }) => {
         const now = summaryOf(a, m);
-        st.history.push({ date: today, summary: now });
+        // Keep where you stood and the path the plan expected from here, for Progress.
+        st.history.push({ date: today, summary: now, portfolio: a.summary.portfolioToday, path: a.rows.map((r) => [r.year, Math.round(r.startTotal)]) });
         store().save();
         const rowFor = (label, key, f) => {
           const was = prev ? prev.summary[key] : null, is = now[key];
@@ -101,7 +102,10 @@
               rowFor('Savings at retirement', 'balRet', (v) => fmt.money(v)),
               rowFor('Safe spending', 'safe', (v) => fmt.money(v))),
           ],
-          actions: [{ label: 'Done', primary: true, onClick: () => { UI.sheet.close(); RP.app.go('home'); } }],
+          actions: [
+            { label: 'Progress', onClick: () => UI.progress.open() },
+            { label: 'Done', primary: true, onClick: () => { UI.sheet.close(); RP.app.go('home'); } },
+          ],
         });
       }).catch((e) => { if (e.message !== 'stale') UI.sheet.close(); });
     };
