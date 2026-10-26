@@ -89,9 +89,10 @@ Engine: `js/engine/explore.js`. Screens: `js/ui/explore.js`.
 - **Possible futures** (Home, under the projection): 100 of the market
   histories your plan is tested on, streaking in like light trails. Mint ones
   last, coral ones run short, your typical path glows amber (`js/ui/futures.js`).
-- **Postcard from retirement** (Home, under the countdown): a golden-hour
-  postcard from January of your first retirement year, written from your plan.
-  Share it or keep it; it's drawn on the phone (`js/ui/postcard.js`).
+- **Postcard from retirement** (Home, under the countdown): a vintage picture
+  postcard from January of your first retirement year, with a painted seaside
+  cottage, a stamp and a postmark, written from your plan. Share it or keep
+  it; it's drawn on the phone (`js/ui/postcard.js`).
 - **The sky follows your finger**: scrub the projection and the sun moves to
   the hour you'd see from that year, then settles back when you let go.
 - **Markets fall 30% tomorrow**: a row in What moves the needle for scary
@@ -120,15 +121,22 @@ that strengthen over a mountain lake), **Synthwave** (a striped neon sun rising
 over a moving grid) and **Nebula** (drifting gas clouds and a star rising over
 a planet's rim). They always use the dark look.
 
-## App icons
+## App icons and pictures
 
-The icons are drawn as SVG in `icons/` (`icon.svg`, `icon-maskable.svg`,
-`favicon.svg`). After editing one, rebuild the PNGs with:
+The app icon (a sun setting on the sea) and the postcard paintings were
+generated with Magnific. The icon's master is
+`icons/source/horizon-icon-1024.png`; every PNG icon is a crop of it, rebuilt
+with:
 
     node tools/make-icons.js
 
-It uses Playwright/Chromium, the `sharp` package, or `rsvg-convert`, whichever
-you have, and tells you how to get one if none is installed.
+It uses Playwright/Chromium, the `sharp` package, or ImageMagick, whichever
+you have, and tells you how to get one if none is installed. To change the
+icon, replace the master with another square picture and rerun it.
+
+The postcard pictures are `img/postcards/coast-1.webp` … `coast-4.webp`
+(960×680). Each plan gets one by its retirement year, and **Another view**
+flips through the rest.
 
 ## Checks
 
