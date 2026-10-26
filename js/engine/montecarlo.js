@@ -47,6 +47,7 @@
     const t = U.clamp((y - (retireYear - yrs)) / yrs, 0, 1);
     return (a.stocks + (a.glide.retiredStocks - a.stocks) * t) / 100;
   }
+  E.stockWeight = stockWeight;
 
   /** Per-year return settings for a plan. */
   function yearParams(P, S, i) {

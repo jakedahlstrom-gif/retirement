@@ -131,7 +131,12 @@
     for (const e of events) {
       const showYear = e.year !== lastYear;
       lastYear = e.year;
-      list.appendChild(h('div.tl-item.' + e.kind + (showYear ? '' : '.same'),
+      // Tap any event for that year's details and cash flow.
+      const openYear = () => UI.compare.showYear(a, e.year, sc);
+      list.appendChild(h('div.tl-item.' + e.kind + (showYear ? '' : '.same'), {
+        role: 'button', tabindex: '0', 'aria-label': `${e.year}: ${e.title}`, onclick: openYear,
+        onkeydown: (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); openYear(); } },
+      },
         h('div.tl-year', showYear ? String(e.year) : ''),
         h('div.tl-dot', UI.icon(e.icon)),
         h('div.tl-body', h('div.tl-title', e.title), h('div.tl-text', e.text), showYear ? h('div.tl-ages', agesAt(P, e.year)) : null)));
@@ -141,7 +146,7 @@
       h('div', { style: { margin: '-6px 4px 14px' } }, h('span.pill.sky-pill', h('span.dot', { style: { background: `var(--s${sc.color})` } }), sc.name)),
       phaseBar(a),
       ladder(a),
-      h('div.card', { style: { paddingLeft: '12px', paddingRight: '14px' } }, list),
+      h('div.card', { style: { paddingLeft: '12px', paddingRight: '14px' } }, list, h('p.tl-hint', 'Tap any event for that year’s money in and out.')),
       h('p.footer-note', 'Results are educational estimates, not financial advice.'));
   };
 })(globalThis.RP = globalThis.RP || {});
