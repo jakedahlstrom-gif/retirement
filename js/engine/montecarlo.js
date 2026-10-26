@@ -173,7 +173,8 @@
   /**
    * Monte Carlo: run the simulation once per random return path.
    * opts: { runs, seed, planPath, sepp, startIdx, state, keepTotals,
-   *         paths (keep the first N runs' year-end totals and run-out years) }
+   *         paths (keep the first N runs' year-end totals and run-out years),
+   *         rawTotals (also return every run's year-end totals, run-major) }
    */
   E.monteCarlo = function (P, S, opts) {
     opts = opts || {};
@@ -201,6 +202,7 @@
     }
     const out = { runs, successRate: successes / runs, failYears };
     if (opts.paths) out.paths = paths;
+    if (keep && opts.rawTotals) out.totals = totals;
     if (keep) {
       const p10 = [], p25 = [], p50 = [], p75 = [], p90 = [];
       const col = new Float64Array(runs);

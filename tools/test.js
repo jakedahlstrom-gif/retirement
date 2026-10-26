@@ -17,7 +17,7 @@ globalThis.RP = {};
 for (const f of [
   'js/engine/util.js', 'data/historical-returns.js', 'js/engine/defaults.js', 'js/engine/tax.js',
   'js/engine/socialsecurity.js', 'js/engine/health.js', 'js/engine/schedule.js', 'js/engine/simulate.js',
-  'js/engine/montecarlo.js', 'js/engine/api.js', 'js/engine/scenarios.js', 'js/engine/slim.js', 'js/engine/levers.js', 'js/engine/explore.js',
+  'js/engine/montecarlo.js', 'js/engine/api.js', 'js/engine/scenarios.js', 'js/engine/slim.js', 'js/engine/levers.js', 'js/engine/explore.js', 'js/engine/lab.js',
   // UI helpers that don't touch the page: the setup guide's plan builder, the cash-flow groups
   'js/ui/core.js', 'js/ui/setup.js', 'js/ui/flow.js',
 ]) require(path.join(ROOT, f));
@@ -178,6 +178,68 @@ test('possible futures: 100 whole lives from the same runs as the headline numbe
   assert.strictEqual(f.successRate, a.summary.successRate);
   assert.ok(f.paths.every((p) => p.values.length === f.years.length));
   assert.ok(f.paths.filter((p) => p.failYear != null).every((p) => p.values[p.values.length - 1] === 0), 'futures that run short end at $0');
+});
+
+console.log('The Lab');
+test('the Mixer starts where the plan is, and only what moved becomes an override', () => {
+  const k = E.mixerKnobs(base);
+  const start = Object.fromEntries(k.faders.map((f) => [f.key, f.value]));
+  start.pads = Object.fromEntries(k.pads.map((p) => [p.key, p.on]));
+  assert.deepStrictEqual(E.mixOverrides(base, start), {});
+  assert.strictEqual(start.age, base.retirement.p1Age);
+  const o = E.mixOverrides(base, Object.assign({}, start, { age: start.age + 2, spend: 90, pads: Object.assign({}, start.pads, { crash: true, gift: true }) }));
+  assert.strictEqual(o['retirement.p1Age'], base.retirement.p1Age + 2);
+  assert.strictEqual(o['spending.retirement'], Math.round(base.spending.retirement * 0.9));
+  assert.strictEqual(o['returns.stress.crash.enabled'], true);
+  assert.strictEqual(o['spending.oneTime'].slice(-1)[0].amount, E.MIX_GIFT.amount);
+  for (const [path, v] of Object.entries(o)) assert.deepStrictEqual(RP.util.getPath(E.applyOverrides(base, o), path), v);
+});
+
+test('the Mixer’s path is the typical market, and its odds match the success rate', () => {
+  const mp = E.mixPath(base);
+  const a = E.analyze(base, { mc: false });
+  assert.strictEqual(mp.values.length, mp.years.length);
+  assert.strictEqual(mp.failYear, a.det.failYear);
+  assert.strictEqual(Math.round(mp.end), Math.round(a.det.rows[a.det.rows.length - 1].balances.total));
+  const mo = E.mixOdds(base, 150);
+  assert.strictEqual(mo.success, E.successRate(base, 150));
+  assert.ok(mo.p10.every((v, i) => v <= mo.p50[i] + 1 && mo.p50[i] <= mo.p90[i] + 1));
+});
+
+test('the decision map starts at your own square and spending more never helps much', () => {
+  const g = E.decisionCells(base);
+  assert.deepStrictEqual([g.cells[0].age, g.cells[0].pct], [base.retirement.p1Age, 100]);
+  assert.strictEqual(g.cells.length, g.ages.length * g.pcts.length);
+  const row = E.decisionMap(base, { runs: 60, cells: g.cells.filter((c) => c.age === base.retirement.p1Age) }).sort((x, y) => x.pct - y.pct);
+  for (let j = 1; j < row.length; j++) assert.ok(row[j].success <= row[j - 1].success + 0.02, `${row[j].pct}%: ${row[j].success} vs ${row[j - 1].success}`);
+});
+
+test('roll a life replays one of the very same runs, the same way every time', () => {
+  const one = E.rollLife(base, 123), again = E.rollLife(base, 123);
+  assert.deepStrictEqual(one.rows.map((r) => r.end), again.rows.map((r) => r.end));
+  assert.strictEqual(one.success, one.failYear == null);
+  assert.ok(one.rank >= 0 && one.rank <= 1);
+  const f = E.futures(base, { count: 124 });
+  assert.strictEqual(one.failYear, f.paths[123].failYear);
+});
+
+test('the range of outcomes: each ridge is a whole distribution, and run-outs only grow', () => {
+  const rg = E.ridgeline(base, { runs: 200 });
+  for (const r of rg.ridges) {
+    const sum = r.density.reduce((t, d) => t + d, 0);
+    assert.ok(r.zero === 1 || Math.abs(sum - 1) < 1e-9, `age ${r.age}: ${sum}`);
+  }
+  for (let i = 1; i < rg.ridges.length; i++) assert.ok(rg.ridges[i].zero >= rg.ridges[i - 1].zero);
+});
+
+test('the plan score is out of 100 and its parts add up', () => {
+  const a = E.slim(E.analyze(base, { runs: RUNS }));
+  const sc = E.planScore(a, { amount: base.spending.retirement * 1.1 });
+  assert.ok(sc.score >= 0 && sc.score <= 100);
+  assert.strictEqual(sc.parts.length, 6);
+  const max = sc.parts.reduce((t, p) => t + p.max, 0);
+  assert.strictEqual(sc.score, Math.round(sc.parts.reduce((t, p) => t + p.points, 0) / max * 100));
+  assert.ok(sc.parts.every((p) => p.frac >= 0 && p.frac <= 1));
 });
 
 console.log(failed ? `\n${failed} failed` : '\nAll passed');

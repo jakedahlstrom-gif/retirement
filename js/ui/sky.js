@@ -10,6 +10,10 @@
  * Sky.set(progress) glides there. Calling it again mid-glide (e.g. while a
  * slider is dragged) just retargets the glide, so the sky follows in real
  * time. Purely visual: it only reads results, it never changes them.
+ *
+ * Scenes (html[data-scene]) repaint the same journey differently: Aurora's
+ * northern lights strengthen, Synthwave's neon sun rises over the grid, and
+ * Nebula's star rises over a planet's rim.
  */
 (function (RP) {
   'use strict';
@@ -40,8 +44,26 @@
     [0.50, { top: '#174789', mid: '#28609f', low: '#3669a8', hz: '#d9e9f5', glow: '#fff3da', glowA: 0.22, seaTop: '#285a8e', seaBot: '#14365f', sun: '#fffaf0', halo: '#ffe6bd', lift: 0.22, stars: 0, reflect: 0.45 }],
     [1.00, { top: '#1f4683', mid: '#335d97', low: '#615b8a', hz: '#ffd49a', glow: '#ffc778', glowA: 0.3, seaTop: '#6a5468', seaBot: '#1f3459', sun: '#ffe7b8', halo: '#ffbf6a', lift: 0.4, stars: 0, reflect: 0.6 }],
   ];
+  // Other scenes (Appearance › Scene). Always dark. `fx` is the scene's own
+  // effect, growing as retirement nears: aurora strength, neon grid glow,
+  // the planet's sunrise rim.
+  const AURORA = [
+    [0.00, { top: '#01040b', mid: '#030b1c', low: '#06182c', hz: '#0b2a3a', glow: '#1fa98a', glowA: 0.10, seaTop: '#071822', seaBot: '#010409', sun: '#dfeeff', halo: '#9fd8ff', lift: 0.55, stars: 1, reflect: 0.25, fx: 0.25 }],
+    [0.50, { top: '#020611', mid: '#051428', low: '#0a2438', hz: '#10374a', glow: '#2be0a8', glowA: 0.16, seaTop: '#0a2230', seaBot: '#02060c', sun: '#e8f4ff', halo: '#a8e6ff', lift: 0.62, stars: 0.9, reflect: 0.4, fx: 0.6 }],
+    [1.00, { top: '#030817', mid: '#071a33', low: '#0d2f45', hz: '#16485a', glow: '#5cffc8', glowA: 0.22, seaTop: '#0c2a38', seaBot: '#02070d', sun: '#f2f8ff', halo: '#b8f0ff', lift: 0.7, stars: 0.8, reflect: 0.6, fx: 1 }],
+  ];
+  const SYNTH = [
+    [0.00, { top: '#06021a', mid: '#160636', low: '#3a0f5e', hz: '#7a1b8c', glow: '#ff2bd6', glowA: 0.18, seaTop: '#12042a', seaBot: '#030008', sun: '#ffd319', halo: '#ff2975', lift: -0.7, stars: 0.9, reflect: 0.1, fx: 0.35 }],
+    [0.50, { top: '#0a0322', mid: '#220842', low: '#56157a', hz: '#c2268f', glow: '#ff3fbf', glowA: 0.3, seaTop: '#1a0636', seaBot: '#04010b', sun: '#ffd84a', halo: '#ff4f8e', lift: 0, stars: 0.6, reflect: 0.4, fx: 0.7 }],
+    [1.00, { top: '#0d0428', mid: '#2c0a4e', low: '#7a1c86', hz: '#ff4fa3', glow: '#ff6ad5', glowA: 0.42, seaTop: '#240842', seaBot: '#05010d', sun: '#ffe066', halo: '#ff6a8a', lift: 0.45, stars: 0.35, reflect: 0.8, fx: 1 }],
+  ];
+  const NEBULA = [
+    [0.00, { top: '#020108', mid: '#070416', low: '#110a2a', hz: '#1c1240', glow: '#5a3bd1', glowA: 0.14, seaTop: '#090614', seaBot: '#020106', sun: '#ffd9a8', halo: '#ff9d6b', lift: -1, stars: 1, reflect: 0, fx: 0.15 }],
+    [0.50, { top: '#03020b', mid: '#0a061c', low: '#170d36', hz: '#271a55', glow: '#7a52ff', glowA: 0.2, seaTop: '#0c0819', seaBot: '#020107', sun: '#ffe2b8', halo: '#ffae7a', lift: -0.4, stars: 1, reflect: 0, fx: 0.55 }],
+    [1.00, { top: '#04030e', mid: '#0d0822', low: '#1f1142', hz: '#3a2470', glow: '#9a7bff', glowA: 0.26, seaTop: '#100a20', seaBot: '#020108', sun: '#fff0d6', halo: '#ffc28a', lift: 0.1, stars: 1, reflect: 0, fx: 1 }],
+  ];
   const COLOR_KEYS = ['top', 'mid', 'low', 'hz', 'glow', 'seaTop', 'seaBot', 'sun', 'halo'];
-  const NUM_KEYS = ['glowA', 'lift', 'stars', 'reflect'];
+  const NUM_KEYS = ['glowA', 'lift', 'stars', 'reflect', 'fx'];
 
   // Colors blend in OKLab so dusk never passes through muddy gray.
   function hexToLab(hex) {
@@ -63,10 +85,18 @@
   const prep = (frames) => frames.map(([p, c]) => {
     const o = { p };
     for (const k of COLOR_KEYS) o[k] = hexToLab(c[k]);
-    for (const k of NUM_KEYS) o[k] = c[k];
+    for (const k of NUM_KEYS) o[k] = c[k] == null ? p : c[k];
     return o;
   });
-  const PAL = { dark: prep(DARK), light: prep(LIGHT) };
+  const PAL = { dark: prep(DARK), light: prep(LIGHT), aurora: prep(AURORA), synthwave: prep(SYNTH), nebula: prep(NEBULA) };
+  /** The scenes, for the Appearance picker. Horizon follows light/dark; the rest are night scenes. */
+  Sky.SCENES = [
+    { key: 'horizon', label: 'Horizon', sub: 'Dawn to golden hour over the sea' },
+    { key: 'aurora', label: 'Aurora', sub: 'Northern lights that grow brighter' },
+    { key: 'synthwave', label: 'Synthwave', sub: 'A neon sun rising over the grid' },
+    { key: 'nebula', label: 'Nebula', sub: 'Deep space and a planet’s sunrise' },
+  ];
+  const scene = () => document.documentElement.dataset.scene || 'horizon';
 
   function sample(frames, p) {
     let i = 1;
@@ -118,7 +148,8 @@
 
   function paint(p) {
     if (!el) return;
-    const c = sample(isLight() ? PAL.light : PAL.dark, p);
+    const sc = scene();
+    const c = sample(sc !== 'horizon' && PAL[sc] ? PAL[sc] : isLight() ? PAL.light : PAL.dark, p);
     const st = el.style;
     st.setProperty('--sky-top', rgb(c.top));
     st.setProperty('--sky-mid', rgb(c.mid));
@@ -132,6 +163,7 @@
     st.setProperty('--sun-lift', c.lift.toFixed(4));
     st.setProperty('--stars', c.stars.toFixed(3));
     st.setProperty('--reflect', c.reflect.toFixed(3));
+    st.setProperty('--fx', c.fx.toFixed(3));
     Sky._top = rgb(c.top);
   }
 
@@ -182,9 +214,13 @@
   Sky.mount = function () {
     if (el) return el;
     stars = h('div.sky-stars');
+    // Scene layers: each scene's CSS shows only its own.
+    const aurora = h('div.sky-aurora', h('span.au.au1'), h('span.au.au2'), h('span.au.au3'));
+    const nebula = h('div.sky-nebula', h('span.nb.nb1'), h('span.nb.nb2'), h('span.nb.nb3'));
     el = h('div.sky', { 'aria-hidden': 'true' },
-      h('div.sky-air', stars, h('div.sky-glow'), h('div.sky-sun')),
-      h('div.sky-sea', h('div.sea-drift'), h('div.sea-reflect', h('div.sea-glint'))),
+      h('div.sky-air', stars, nebula, aurora, h('div.sky-glow'), h('div.sky-sun')),
+      h('div.sky-sea', h('div.sea-drift'), h('div.sea-reflect', h('div.sea-glint')), h('div.sky-grid')),
+      h('div.sky-ridge'), h('div.sky-planet'),
       h('div.sky-line'));
     document.body.prepend(el);
     layoutStars(); layoutSun();
