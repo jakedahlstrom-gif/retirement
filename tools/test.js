@@ -57,7 +57,7 @@ const lv = E.levers(base, { runs: RUNS });
 const by = Object.fromEntries(lv.list.map((r) => [r.key, r]));
 
 test('tests the expected changes for a working couple', () => {
-  for (const k of ['later', 'earlier', 'spendLess', 'spendMore', 'saveMore', 'partTime', 'guardrailsOn', 'marketsDown']) assert.ok(by[k], `missing lever ${k}`);
+  for (const k of ['later', 'earlier', 'spendLess', 'spendMore', 'saveMore', 'partTime', 'guardrailsOn', 'marketsDown', 'crashNow']) assert.ok(by[k], `missing lever ${k}`);
   assert.ok(by.ss67 || by.ss70, 'missing a Social Security lever');
 });
 
@@ -66,6 +66,8 @@ test('deltas are measured against the same base and point the right way', () => 
   assert.ok(by.later.delta >= by.earlier.delta, 'retiring later should not hurt more than retiring earlier');
   assert.ok(by.spendLess.delta >= by.spendMore.delta, 'spending less should not hurt more than spending more');
   assert.ok(by.marketsDown.delta < 0, 'worse markets should lower success');
+  assert.ok(by.crashNow.delta < 0, 'a crash today should lower success');
+  assert.strictEqual(by.crashNow.overrides['balances.cash'], undefined, 'cash is not invested');
 });
 
 test('each lever is plain scenario overrides', () => {
@@ -167,6 +169,15 @@ test('each year’s cash flow balances: money in equals money out', () => {
       assert.ok(Math.abs(sum(ins) - sum(outs)) < 2, `${r.year}: in ${sum(ins)} vs out ${sum(outs)}`);
     }
   }
+});
+
+test('possible futures: 100 whole lives from the same runs as the headline number', () => {
+  const f = E.futures(base, { count: 100 });
+  const a = E.analyze(base);
+  assert.strictEqual(f.paths.length, 100);
+  assert.strictEqual(f.successRate, a.summary.successRate);
+  assert.ok(f.paths.every((p) => p.values.length === f.years.length));
+  assert.ok(f.paths.filter((p) => p.failYear != null).every((p) => p.values[p.values.length - 1] === 0), 'futures that run short end at $0');
 });
 
 console.log(failed ? `\n${failed} failed` : '\nAll passed');

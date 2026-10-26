@@ -52,6 +52,19 @@ Engine: `js/engine/explore.js`. Screens: `js/ui/explore.js`.
   path the plan expected. Later check-ins show whether you're ahead or behind,
   adjusted for inflation (`js/ui/progress.js`).
 
+## Little delights
+
+- **Possible futures** (Home, under the projection): 100 of the market
+  histories your plan is tested on, streaking in like light trails. Mint ones
+  last, coral ones run short, your typical path glows amber (`js/ui/futures.js`).
+- **Postcard from retirement** (Home, under the countdown): a golden-hour
+  postcard from January of your first retirement year, written from your plan.
+  Share it or keep it; it's drawn on the phone (`js/ui/postcard.js`).
+- **The sky follows your finger**: scrub the projection and the sun moves to
+  the hour you'd see from that year, then settles back when you let go.
+- **Markets fall 30% tomorrow**: a row in What moves the needle for scary
+  headlines: how much a crash right now would really change your odds.
+
 ## Your data
 
 Plan › Export backup saves everything as a `.json` file (import it on any

@@ -27,6 +27,7 @@
     add('ss', 'Social Security', Math.max(S.ssDetail.p1.claimYear, S.ssDetail.p2.claimYear) + 1);
     return out.sort((x, y) => x.row.year - y.row.year);
   }
+  PC.phases = phases;
 
   const mo = (v) => fmt.money(v / 12, { full: true });
 

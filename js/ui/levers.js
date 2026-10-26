@@ -42,6 +42,8 @@
         about: `Spending guardrails: in any retirement year your savings are more than ${i.behindPct}% behind the typical path, spend ${i.cutPct}% less. Small, temporary cuts like this protect against a bad run of markets.` };
       case 'guardrailsOff': return { label: 'Never trim spending', sub: 'Turn guardrails off', name: 'No guardrails',
         about: 'Spend the same amount every year, whatever markets do.' };
+      case 'crashNow': return { label: `Markets fall ${i.pct}% tomorrow`, sub: `${fmt.money(i.loss)} gone overnight`, name: `Crash today (−${i.pct}%)`,
+        about: `Everything you have invested drops ${i.pct}% overnight (cash stays put), then the plan carries on with ordinary markets. A gut check for scary headlines: how much would a crash right now really change your odds?` };
       case 'marketsDown': return { label: 'Markets earn 1% less', sub: 'A risk, not a choice', name: 'Markets −1%',
         about: 'Every year’s return one percentage point lower. You can’t control this one, but it shows how much the plan leans on markets.' };
       default: return { label: lv.key, sub: '', name: lv.key, about: '' };

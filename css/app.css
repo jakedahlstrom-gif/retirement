@@ -786,6 +786,17 @@ body.locked .app, body.locked .tabbar, body.locked .sheet:not(.over-lock), body.
 .ss-legend .lg { display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; }
 .ss-scale { flex: 1; min-width: 60px; height: 6px; border-radius: 3px; background: linear-gradient(to right, color-mix(in srgb, var(--warn) 58%, transparent), var(--inset-2), color-mix(in srgb, var(--pos) 72%, transparent)); }
 
+/* Postcard from retirement */
+.hero-postcard { display: inline-flex; align-items: center; gap: 7px; margin-top: 14px; height: 32px; border-radius: 16px; font-size: 13.5px; font-weight: 500; transition: transform .2s var(--ease-spring), background .2s; }
+.hero-postcard svg { width: 16px; height: 16px; }
+.hero-postcard:active { transform: scale(.96); }
+.pc-postcard { display: block; width: 100%; height: auto; border-radius: 16px; box-shadow: 0 12px 36px rgba(0, 0, 0, .35); }
+
+/* Possible futures */
+.fu-box { position: relative; height: 270px; margin: 4px -6px 2px; }
+.fu-canvas { display: block; width: 100%; height: 100%; }
+.proj-more { border-top: 0; padding: 12px 20px 2px; }
+
 /* Progress */
 .pg-hero { margin: 4px 2px 6px; }
 .pg-hero .value-sub + .value-sub { margin-top: 2px; }

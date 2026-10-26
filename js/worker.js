@@ -37,8 +37,8 @@ self.onmessage = function (ev) {
       const res = RP.engine.successByAge(plan, opts || {});
       self.postMessage({ id, result: res });
     } else if (type === 'explore') {
-      // Deep dives: opts.kind = 'ss' | 'roth' | 'history'
-      const fn = { ss: 'ssExplorer', roth: 'rothExplorer', history: 'historyReplay' }[opts && opts.kind];
+      // Deep dives: opts.kind = 'ss' | 'roth' | 'history' | 'futures'
+      const fn = { ss: 'ssExplorer', roth: 'rothExplorer', history: 'historyReplay', futures: 'futures' }[opts && opts.kind];
       if (!fn) throw new Error('Unknown explorer ' + (opts && opts.kind));
       self.postMessage({ id, result: RP.engine[fn](plan, opts) });
     } else if (type === 'levers') {
