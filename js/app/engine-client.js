@@ -63,7 +63,7 @@
               resolve(out);
             } else if (type === 'byAge') resolve(E.successByAge(plan, opts));
             else if (type === 'levers') resolve(E.levers(plan, opts, onPartial));
-            else if (type === 'explore') resolve(E[{ ss: 'ssExplorer', roth: 'rothExplorer', history: 'historyReplay' }[opts.kind]](plan, opts));
+            else if (type === 'explore') resolve(E[{ ss: 'ssExplorer', roth: 'rothExplorer', history: 'historyReplay', futures: 'futures' }[opts.kind]](plan, opts));
           } catch (e) { reject(e); }
         }, 30);
         return;
@@ -114,7 +114,7 @@
     return run('levers', 'levers', plan, { runs: runs || 400 }, onPartial);
   };
 
-  /** A deep dive ('ss' | 'roth' | 'history'). Opening another one cancels the last. */
+  /** A deep dive ('ss' | 'roth' | 'history' | 'futures'). Opening another one cancels the last. */
   C.explore = function (kind, plan) {
     restart('explore');
     return run('explore', 'explore', plan, { kind });

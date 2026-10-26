@@ -5,7 +5,7 @@
  * It only ever caches this app's files. It never sends your data anywhere.
  * When you update the app, bump VERSION so phones fetch the new files.
  */
-const VERSION = 'horizon-v8';
+const VERSION = 'horizon-v9';
 const FILES = [
   './', 'index.html', 'manifest.json', 'css/app.css',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/icon-maskable-512.png',
@@ -14,8 +14,8 @@ const FILES = [
   'js/engine/util.js', 'js/engine/defaults.js', 'js/engine/tax.js', 'js/engine/socialsecurity.js',
   'js/engine/health.js', 'js/engine/schedule.js', 'js/engine/simulate.js', 'js/engine/montecarlo.js',
   'js/engine/api.js', 'js/engine/scenarios.js', 'js/engine/slim.js', 'js/engine/levers.js', 'js/engine/explore.js', 'js/worker.js',
-  'js/ui/core.js', 'js/ui/tips.js', 'js/ui/controls.js', 'js/ui/sky.js', 'js/ui/insights.js', 'js/ui/levers.js', 'js/ui/paycheck.js', 'js/ui/plan-fields.js',
-  'js/ui/plan.js', 'js/ui/scenarios.js', 'js/ui/projection.js', 'js/ui/home.js', 'js/ui/charts.js', 'js/ui/flow.js', 'js/ui/compare.js', 'js/ui/timeline.js', 'js/ui/checklist.js', 'js/ui/checkin.js', 'js/ui/progress.js', 'js/ui/setup.js', 'js/ui/explore.js',
+  'js/ui/core.js', 'js/ui/tips.js', 'js/ui/controls.js', 'js/ui/sky.js', 'js/ui/insights.js', 'js/ui/levers.js', 'js/ui/paycheck.js', 'js/ui/postcard.js', 'js/ui/plan-fields.js',
+  'js/ui/plan.js', 'js/ui/scenarios.js', 'js/ui/projection.js', 'js/ui/home.js', 'js/ui/charts.js', 'js/ui/flow.js', 'js/ui/futures.js', 'js/ui/compare.js', 'js/ui/timeline.js', 'js/ui/checklist.js', 'js/ui/checkin.js', 'js/ui/progress.js', 'js/ui/setup.js', 'js/ui/explore.js',
   'js/app/store.js', 'js/app/engine-client.js', 'js/app/pin.js', 'js/app/app.js',
 ];
 
