@@ -738,6 +738,17 @@ body.locked .app, body.locked .tabbar, body.locked .sheet:not(.over-lock), body.
 .pb-item p { margin: 3px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
 .yr-playbook { border-top: 0; padding: 0 0 8px; }
 
+/* Retired mode (Home): safe spending in the hero, and the spending card in place of the retirement-age card */
+.hero-num.hero-spend { font-size: clamp(64px, 21vw, 92px); transition: opacity .3s; }
+.hero-spend small { font-size: 0.32em; font-weight: 300; letter-spacing: 0; margin-left: 6px; color: var(--on-sky-2); }
+.spend-card .card-title { margin-bottom: 4px; }
+.spend-card .value-lg small { font-size: 18px; font-weight: 300; margin-left: 2px; letter-spacing: 0; color: var(--muted); }
+.spend-card .slider { margin-top: 8px; }
+.spend-card .phase-row { margin-top: 0; padding-top: 4px; border-top: 0; }
+.spend-card .phase-row .e-use { white-space: nowrap; flex: none; }
+.spend-card .spend-help { font-size: 14px; color: var(--muted); }
+.spend-card .spend-help .e-label { display: block; }
+
 /* Earliest retirement age, under the slider */
 .earliest { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 12px; border-top: 0.5px solid var(--line-strong); font-size: 15px; transition: opacity .3s; }
 .earliest .e-label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
@@ -1348,4 +1359,79 @@ body.locked .app, body.locked .tabbar, body.locked .sheet:not(.over-lock), body.
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
   .sky-stars .star, .sea-drift, .sea-glint, .au, .nb, .sky-grid { animation: none !important; }
+}
+
+/* ---------------------------------------------------- 9. Print: the plan report
+   The report is a document: white paper, dark ink, fixed colors that ignore the
+   app theme. On screen it previews inside a sheet; for printing it's copied into
+   #print-root and everything else on the page is hidden. */
+#print-root { display: none; }
+.rpt-preview { border-radius: 10px; overflow: hidden; box-shadow: 0 1px 8px rgba(0, 0, 0, 0.35); }
+.rpt { background: #fff; color: #14171f; font: 13px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 720px; margin: 0 auto; padding: 1.4em 1.3em; text-align: left; }
+.rpt * { box-sizing: border-box; }
+.rpt h1 { font-size: 1.9em; margin: 0; line-height: 1.1; letter-spacing: -0.01em; color: #14171f; }
+.rpt h2 { font-size: 1.02em; margin: 0 0 0.45em; padding-bottom: 0.2em; border-bottom: 1.5px solid #14171f; text-transform: uppercase; letter-spacing: 0.05em; color: #14171f; }
+.rpt h3 { font-size: 0.95em; margin: 0.6em 0 0.15em; color: #1d3f9e; }
+.rpt p { margin: 0 0 0.4em; }
+.rpt-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 1em; padding-bottom: 0.7em; border-bottom: 3px solid #1d3f9e; }
+.rpt-names { color: #3b4252; font-size: 1.1em; margin-top: 0.15em; }
+.rpt-meta { text-align: right; font-size: 0.9em; color: #555b6b; }
+.rpt-meta > div:first-child { font-weight: 700; color: #14171f; }
+.rpt-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5em; margin: 0.9em 0; }
+.rpt-stat { background: #f1f3f8; border-radius: 8px; padding: 0.5em 0.7em; }
+.rpt-stat-l { font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.05em; color: #555b6b; }
+.rpt-stat-v { font-size: 1.35em; font-weight: 700; color: #14171f; line-height: 1.25; }
+.rpt-stat-s { font-size: 0.8em; color: #555b6b; }
+.rpt-sec { margin: 0 0 1em; }
+.rpt-chart { width: 100%; height: auto; display: block; }
+.rpt-legend { display: flex; gap: 0.2em 1.2em; flex-wrap: wrap; font-size: 0.85em; color: #3b4252; }
+.rpt-legend > span { display: inline-flex; align-items: center; gap: 0.4em; }
+.rpt-key { display: inline-block; width: 1.5em; height: 0.7em; border-radius: 2px; }
+.rpt-key.line { background: #1d3f9e; height: 3px; }
+.rpt-key.band { background: #c9d6f5; }
+.rpt-cols { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.2em; }
+.rpt-kv-r { display: flex; justify-content: space-between; gap: 0.8em; padding: 0.2em 0; border-bottom: 1px solid #e3e6ee; }
+.rpt-kv-r .k { color: #555b6b; }
+.rpt-kv-r .v { font-weight: 600; text-align: right; }
+.rpt-dates { list-style: none; margin: 0; padding: 0; }
+.rpt-dates li { padding: 0.2em 0; border-bottom: 1px solid #e3e6ee; }
+.rpt-dates b { display: inline-block; min-width: 3em; color: #1d3f9e; }
+.rpt-tbl { width: 100%; border-collapse: collapse; font-size: 0.92em; }
+.rpt-tbl th, .rpt-tbl td { padding: 0.3em 0.4em; border-bottom: 1px solid #e3e6ee; text-align: left; vertical-align: top; }
+.rpt-tbl th { font-size: 0.82em; text-transform: uppercase; letter-spacing: 0.04em; color: #555b6b; border-bottom: 1.5px solid #14171f; }
+.rpt-tbl .n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rpt-years { font-size: 0.82em; }
+.rpt-years th, .rpt-years td { padding: 0.25em 0.3em; }
+.rpt-tbl tr.hl td { background: #eaf0ff; font-weight: 700; }
+.rpt-grp { break-inside: avoid; }
+.rpt-item { padding: 0.25em 0; border-bottom: 1px solid #e3e6ee; break-inside: avoid; }
+.rpt-item-h { display: flex; justify-content: space-between; gap: 0.8em; }
+.rpt-detail { font-size: 0.82em; color: #555b6b; line-height: 1.4; }
+.rpt-note { font-size: 0.82em; color: #555b6b; }
+.rpt-alert { padding: 0.35em 0.6em; margin-bottom: 0.35em; border-left: 4px solid #8a90a0; background: #f6f7fa; break-inside: avoid; }
+.rpt-alert.bad { border-left-color: #c0392b; }
+.rpt-alert.warn { border-left-color: #d98a00; }
+.rpt-foot { margin-top: 1em; padding-top: 0.6em; border-top: 1px solid #c9cdd8; font-size: 0.8em; color: #555b6b; text-align: center; }
+@media (max-width: 520px) {
+  .rpt { padding: 1em 0.9em; font-size: 12px; }
+  .rpt-cols { grid-template-columns: 1fr; gap: 0; }
+  .rpt-stats { grid-template-columns: repeat(2, 1fr); }
+  .rpt-tbl-wrap, .rpt-years { display: block; overflow-x: auto; }
+}
+
+@page { margin: 12mm; }
+@media print {
+  body.rpt-printing, html:has(body.rpt-printing) { background: #fff !important; color: #000 !important; height: auto !important; overflow: visible !important; }
+  body.rpt-printing > *:not(#print-root) { display: none !important; }
+  #print-root { display: block; }
+  #print-root, #print-root * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #print-root .rpt { max-width: none; margin: 0; padding: 0; font-size: 9.5pt; line-height: 1.3; color: #000; }
+  #print-root .rpt-chart { max-height: 58mm; }
+  #print-root .rpt-sec { margin-bottom: 0.7em; }
+  #print-root .rpt-sec.rpt-play { break-inside: auto; }
+  #print-root .rpt-years { font-size: 8pt; display: table; }
+  #print-root .rpt-cols { grid-template-columns: 1.5fr 1fr; gap: 1.2em; }
+  #print-root .rpt-stats { grid-template-columns: repeat(3, 1fr); }
+  .rpt-sec, .rpt-tbl, .rpt-tbl tr, .rpt-stats, .rpt-chartbox, .rpt-item, .rpt-alert, .rpt-cols { break-inside: avoid; }
+  .rpt-sec h2 { break-after: avoid; }
 }

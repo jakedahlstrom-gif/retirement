@@ -8,6 +8,12 @@
  * The layout is built once; new results only update the numbers, so they can
  * glide smoothly from old to new values. Moving a retirement slider moves the
  * hero countdown and the sky immediately, before the new results arrive.
+ *
+ * Retired mode: once everyone has stopped working, "when do I retire" is
+ * history. The hero then answers "how much can I spend?" (safe spending per
+ * month, and the chance the money lasts) and the retirement-age card gives
+ * way to a spending slider. The mode follows the plan, so it flips by itself
+ * when you switch scenarios, undo, or start a new plan.
  */
 (function (RP) {
   'use strict';
@@ -20,6 +26,11 @@
   let anchor = null; // last analysed retirement year, to preview slider moves
   let scrubbing = false;
   let ageShown = false;
+  let retiredMode = null; // true once everyone has stopped working (null until first sync)
+  let modeKey = null;     // active scenario the retired-mode numbers belong to
+  let spendKey = null;    // plan the spending slider's range was last set for
+  let lastSafe = null;    // latest safe spending for THIS plan (never one from another plan)
+  let safeStale = false;  // true while safe spending is being recalculated
 
   /** Retirement year as a slider preview: the last result, shifted by the change. */
   function naiveYear(P) { const ry = RP.engine.retireYears(P); return Math.max(ry.p1, ry.p2) + 1; }
@@ -63,9 +74,16 @@
     els.ageSub = h('div.hero-meta', '');
     els.postcardText = h('span', 'Postcard from retirement');
     els.postcard = h('button.sky-pill.hero-postcard', { type: 'button', hidden: true, onclick: () => UI.postcard.open() }, UI.icon('mail'), els.postcardText);
+    // Retired mode swaps the countdown for spending (shown instead of ageVal, togo, ageSub)
+    els.ageTip = UI.tipButton('retireAge');
+    els.spendTip = UI.tipButton('safeSpend'); els.spendTip.hidden = true;
+    els.rNumVal = h('span', '…'); els.rSuf = h('small', '/mo');
+    els.rNum = h('div.hero-num.hero-spend', { hidden: true }, els.rNumVal, els.rSuf);
+    els.rLine = h('div.hero-togo', { hidden: true }, '…');
+    els.rSub = h('div.hero-meta', { hidden: true });
     els.hero = h('div.hero-sky',
-      h('div.hero-label', els.ageTitle, UI.tipButton('retireAge'), els.busy),
-      els.ageVal, els.togo, els.ageSub, els.postcard);
+      h('div.hero-label', els.ageTitle, els.ageTip, els.spendTip, els.busy),
+      els.ageVal, els.togo, els.ageSub, els.rNum, els.rLine, els.rSub, els.postcard);
 
     // Retirement age slider
     els.ageSlider = h('input.slider', { type: 'range', min: 45, max: 65, step: 1, 'aria-label': 'Retirement age' });
@@ -86,7 +104,7 @@
     els.earliest = h('div.earliest', h('span.e-label', els.earliestLabel, UI.tipButton('earliest')), els.earliestVal, els.earliestUse);
     els.togetherWrap = h('div');
     els.p2Wrap = h('div');
-    const retire = h('div.card.retire-card',
+    const retire = els.retire = h('div.card.retire-card',
       els.ageSlider,
       els.ageScale,
       els.earliest,
@@ -105,14 +123,44 @@
       commitAge(v);
     });
 
+    // Retired mode: spending slider in place of the retirement-age card
+    els.spendNum = h('span'); els.spendMo = h('div.value-sub');
+    els.spendSlider = h('input.slider', { type: 'range', min: 10000, max: 140000, step: 1000, 'aria-label': 'Retirement spending per year' });
+    els.spendScale = h('div.slider-scale');
+    els.spendMain = h('div', h('div.value-lg', els.spendNum, h('small', ' a year')), els.spendMo, els.spendSlider, els.spendScale);
+    els.spendPhases = h('div.retire-row.phase-row', { hidden: true },
+      h('span', 'Your spending follows your phases.'),
+      h('button.link-btn.e-use', { type: 'button', onclick: () => RP.app.go('plan') }, 'Edit in Plan'));
+    els.spendSafe = h('span.e-label');
+    els.spendUse = h('button.link-btn.e-use', { type: 'button', hidden: true, onclick: () => {
+      const s = lastSafe;
+      if (!s || s.floor || s.amount == null) return;
+      const v = Math.floor(s.amount / 500) * 500;
+      store().set('spending.retirement', v, { forceUndo: true });
+      UI.toast(`Spending set to ${fmt.money(v)} a year`, 'Undo', () => store().undo());
+    } }, 'Use');
+    els.spendHelp = h('div.earliest.spend-help', { hidden: true }, els.spendSafe, els.spendUse);
+    els.spend = h('div.card.retire-card.spend-card', { hidden: true },
+      h('div.card-title', h('span', 'Your spending')), els.spendMain, els.spendPhases, els.spendHelp);
+    const commitSpend = UI.debounce((v) => store().set('spending.retirement', v), 60);
+    trackDrag(els.spendSlider);
+    els.spendSlider.addEventListener('input', () => {
+      const v = Number(els.spendSlider.value);
+      paintSlider(els.spendSlider);
+      paintSpendValue(v);
+      UI.haptic();
+      commitSpend(v);
+    });
+
     // Chance of success | safe spending
     els.pct = h('span', '—');
     els.meter = h('span');
     els.safe = h('div.value-lg', '—');
+    els.goalLine = h('div.value-sub', { hidden: true });
     els.ringWrap = h('div.cell.ring-wrap', h('div.ring-glow'),
       h('div.label', { style: { display: 'flex', alignItems: 'center', gap: '5px' } }, 'Chance of success', UI.tipButton('success')),
       h('div.value-lg', els.pct, h('small', '%')),
-      h('div.meter', els.meter));
+      h('div.meter', els.meter), els.goalLine);
     const duo = h('div.card.duo', els.ringWrap, h('div.sep'),
       h('div.cell', h('div.label', { style: { display: 'flex', alignItems: 'center', gap: '5px' } }, 'Safe spending', UI.tipButton('safeSpend')),
         els.safe, h('div.value-sub', 'per year')));
@@ -150,6 +198,7 @@
     UI.mount(root,
       els.hero,
       retire,
+      els.spend,
       els.sampleBanner,
       duo,
       proj,
@@ -182,6 +231,62 @@
     paintSlider(s);
   }
 
+  // ------------------------------------------------------------ retired mode
+  function paintSpendValue(v) {
+    els.spendNum.textContent = fmt.money(v);
+    els.spendMo.textContent = `${fmt.money(v / 12, { full: true })} a month`;
+  }
+  /** Slider range: about half to double the value, in $1,000s. Set rarely so the thumb never jumps. */
+  function setSpendRange(v) {
+    const s = els.spendSlider;
+    const lo = Math.min(Math.max(10000, Math.round(v * 0.5 / 1000) * 1000), Math.floor(v / 1000) * 1000);
+    const hi = Math.max(Math.round(v * 2 / 1000) * 1000, Math.ceil(v / 1000) * 1000, lo + 10000);
+    s.min = lo; s.max = hi;
+    const k = (x) => '$' + Math.round(x / 1000) + 'K';
+    UI.mount(els.spendScale, h('span', k(lo)), h('span', k((lo + hi) / 2)), h('span', k(hi)));
+  }
+  /** Hero number and the "safe at" helper from the latest safe spending. */
+  function paintSpend() {
+    if (!retiredMode) return;
+    const P = store().activePlan(), s = lastSafe, ok = !!s && s.amount != null;
+    if (ok) {
+      els.rSuf.hidden = false;
+      UI.countTo(els.rNumVal, s.amount / 12, (x) => (s.floor ? '<' : '') + fmt.money(x, { full: true }) + (s.capped ? '+' : ''), 900, 0);
+    } else { els.rNumVal.textContent = '…'; els.rNumVal._val = null; els.rSuf.hidden = true; }
+    els.rNum.style.opacity = ok && !safeStale ? '1' : '0.45';
+    const phases = !!(P.spending.phases && P.spending.phases.enabled);
+    els.spendHelp.hidden = !ok;
+    els.spendHelp.style.opacity = safeStale ? '0.45' : '1';
+    if (ok) {
+      els.spendSafe.textContent = `Safe at ${P.sim.successTarget}%: ${fmt.safe(s)}/yr`;
+      els.spendUse.hidden = safeStale || phases || !!s.floor || Math.abs(s.amount - P.spending.retirement) <= 500;
+    }
+  }
+  /** Switch the Home screen between working and retired layouts. */
+  function applyMode(retired) {
+    retiredMode = retired;
+    els.retire.hidden = retired; els.spend.hidden = !retired;
+    els.ageVal.hidden = els.togo.hidden = els.ageSub.hidden = els.ageTip.hidden = retired;
+    els.rNum.hidden = els.rLine.hidden = els.rSub.hidden = els.spendTip.hidden = !retired;
+    if (retired) els.postcard.hidden = true; // Home.update decides again for a working plan
+    else { els.rNum.style.opacity = ''; spendKey = null; }
+  }
+  function syncRetired(P) {
+    const ry = RP.engine.retireYears(P), now = new Date().getFullYear();
+    els.ageTitle.textContent = 'You can spend about';
+    els.rSub.textContent = `Retired since ${Math.max(ry.p1, ry.p2) + 1} · ${P.people.p1.name} ${now - P.people.p1.birthYear} · ${P.people.p2.name} ${now - P.people.p2.birthYear}`;
+    const sp = P.spending, phases = !!(sp.phases && sp.phases.enabled);
+    els.spendMain.hidden = phases; els.spendPhases.hidden = !phases;
+    if (!phases) {
+      const s = els.spendSlider, v = sp.retirement, key = store().state.active;
+      if (!s._drag) {
+        if (spendKey !== key || v < Number(s.min) || v > Number(s.max)) { setSpendRange(v); spendKey = key; }
+        s.value = v; paintSlider(s); paintSpendValue(v);
+      }
+    }
+    paintSpend();
+  }
+
   function updateAgeSub(P) {
     const year = P.people.p1.birthYear + P.retirement.p1Age;
     const p2 = P.retirement.together ? year - P.people.p2.birthYear : P.retirement.p2Age;
@@ -192,7 +297,15 @@
   Home.syncInputs = function () {
     if (!els) return;
     const P = store().activePlan();
-    els.ageTitle.textContent = `${P.people.p1.name} ${P.people.p1.birthYear + P.retirement.p1Age < new Date().getFullYear() ? 'retired' : 'retires'} at`;
+    const ry = RP.engine.retireYears(P), y0 = Number(String(P.balances.asOf).slice(0, 4));
+    const retired = Math.max(ry.p1, ry.p2) < y0, key = store().state.active;
+    if (retired !== retiredMode || key !== modeKey) {
+      // A different plan: don't show the last plan's safe spending as if it were this one's
+      lastSafe = null; modeKey = key;
+      if (retired) els.rLine.textContent = '…';
+    }
+    if (retired !== retiredMode) applyMode(retired);
+    if (!retired) els.ageTitle.textContent = `${P.people.p1.name} ${P.people.p1.birthYear + P.retirement.p1Age < new Date().getFullYear() ? 'retired' : 'retires'} at`;
     showOnSlider(els.ageSlider, P.retirement.p1Age);
     const lo = Number(els.ageSlider.min), hi = Number(els.ageSlider.max);
     UI.mount(els.ageScale, h('span', String(lo)), h('span', String(Math.round((lo + hi) / 2))), h('span', String(hi)));
@@ -236,6 +349,8 @@
       showOnSlider(s2, P.retirement.p2Age);
     } else if (els.p2) { els.p2 = null; UI.mount(els.p2Wrap); }
 
+    if (retired) syncRetired(P);
+
     if (P.meta && P.meta.isSample) {
       UI.mount(els.sampleBanner, h('div.card.banner',
         h('div.b-text', h('b', 'You’re looking at a sample household. '), 'Set up your own plan in a few minutes, or import a plan file. Your numbers stay on this device.'),
@@ -264,9 +379,16 @@
   function showDefaultReadout() {
     const a = Home._a;
     if (!a) return;
-    els.projLabel.textContent = 'At retirement';
-    els.balRet.textContent = fmt.money(a.summary.balanceAtRetirement || 0);
-    els.balRetSub.textContent = `Jan 1, ${a.summary.retireYear}`;
+    const now = headline(a);
+    els.projLabel.textContent = now.label;
+    els.balRet.textContent = fmt.money(now.value);
+    els.balRetSub.textContent = now.sub;
+  }
+  /** The number over the projection: savings at retirement, or savings today once you're retired. */
+  function headline(a) {
+    const s = a.summary;
+    return retiredMode ? { label: 'Savings now', value: s.portfolioToday || 0, sub: fmt.date(a.plan.balances.asOf) }
+      : { label: 'At retirement', value: s.balanceAtRetirement || 0, sub: `Jan 1, ${s.retireYear}` };
   }
   function onScrub(info) {
     const a = Home._a;
@@ -294,6 +416,8 @@
     const pct = s.successRate;
     UI.countTo(els.pct, Math.round(pct * 100), (x) => String(Math.round(x)), 900, 0);
     els.meter.style.width = (pct * 100) + '%';
+    els.goalLine.hidden = !(s.legacyGoal > 0);
+    if (s.legacyGoal > 0) els.goalLine.textContent = `with ${fmt.money(s.legacyGoal)} left at the end`;
     els.ringWrap.classList.toggle('warn', pct < 0.9 && pct >= 0.75);
     els.ringWrap.classList.toggle('bad', pct < 0.75);
     if (lastSuccess != null && lastSuccess < 0.9 && pct >= 0.9) Home.celebrate();
@@ -303,15 +427,17 @@
     UI.countTo(els.netWorth, s.netWorthToday, (x) => fmt.money(x), 900, 0);
     els.netWorthSub.textContent = `Savings ${fmt.money(s.portfolioToday)} + home & 529`;
     if (!scrubbing) {
-      els.projLabel.textContent = 'At retirement';
-      UI.countTo(els.balRet, s.balanceAtRetirement || 0, (x) => fmt.money(x), 900, 0);
-      els.balRetSub.textContent = `Jan 1, ${s.retireYear}`;
+      const now = headline(a);
+      els.projLabel.textContent = now.label;
+      UI.countTo(els.balRet, now.value, (x) => fmt.money(x), 900, 0);
+      els.balRetSub.textContent = now.sub;
     }
     if (els.chart) els.chart.update(chartData(a));
     UI.paycheck.update(a);
     UI.playbook.update(a);
     els.postcardText.textContent = `Postcard from ${s.retireYear}`;
-    els.postcard.hidden = s.retireYear <= a.schedule.y0; // only for a retirement still ahead
+    els.postcard.hidden = retiredMode || s.retireYear <= a.schedule.y0; // only for a retirement still ahead
+    if (retiredMode) els.rLine.textContent = `${Math.round(pct * 100)}% chance your money lasts to ${a.plan.household.horizonAge}${s.legacyGoal > 0 ? `, with ${fmt.money(s.legacyGoal)} left` : ''}`;
 
     els.summary.innerHTML = UI.insights.summary(a, Home._metrics);
     renderAlerts(a, Home._metrics);
@@ -325,6 +451,7 @@
     if (!els) return;
     Home._metrics = Object.assign({}, Home._metrics || {}, m);
     const mm = Home._metrics;
+    if (m.safe) { lastSafe = m.safe; safeStale = false; paintSpend(); }
     if (mm.safe) UI.countTo(els.safe, mm.safe.amount, (x) => (mm.safe.floor ? '<' : '') + fmt.money(x) + (mm.safe.capped ? '+' : ''), 900, 0);
     if (mm.green) {
       UI.countTo(els.green, mm.green.amount || 0, (x) => (mm.green.amount ? fmt.money(x) : '—'));
@@ -351,6 +478,7 @@
     if (!els) return;
     for (const k of ['safe', 'earliest', 'green', 'coast']) els[k].style.opacity = '0.45';
     els.earliestUse.hidden = true;
+    safeStale = true; paintSpend();
   };
 
   /** "Earliest age for 90% success: 54  Use" under the retirement slider. */

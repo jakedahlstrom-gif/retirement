@@ -38,9 +38,12 @@
       const fix = e && e.age != null && e.age > P.retirement.p1Age
         ? `Retiring at ${e.age} would reach ${e.target}%, or try spending a little less.`
         : 'Try retiring a year or two later, or spending a little less.';
-      out.push({ level: 'bad', title: `Success is ${fmt.pct(sum.successRate)}`, text: 'Fewer than 8 in 10 market scenarios fund the whole plan.', fix, path: 'retirement.p1Age', years: [] });
+      out.push({ level: 'bad', title: `Success is ${fmt.pct(sum.successRate)}`, text: sum.legacyGoal > 0 ? 'Fewer than 8 in 10 market scenarios fund the whole plan and leave your goal.' : 'Fewer than 8 in 10 market scenarios fund the whole plan.', fix, path: 'retirement.p1Age', years: [] });
     }
     // Typical path runs short
+    if (sum.legacyGoal > 0 && !a.summary.shortfallYear && sum.endBalance < sum.legacyGoal) {
+      out.push({ level: 'warn', title: `Ends below your ${fmt.money(sum.legacyGoal)} goal`, text: `A typical market leaves about ${fmt.money(sum.endBalance)} at the end of the plan.`, fix: 'Spend a little less, work a little longer, or lower the goal.', path: 'sim.legacyGoal', years: [] });
+    }
     if (a.summary.shortfallYear) {
       out.push({ level: 'bad', title: `Money runs short in ${a.summary.shortfallYear}`, text: 'Even with typical markets, savings run out before the end of the plan.', fix: 'Lower retirement spending.', path: 'spending.retirement', years: [a.summary.shortfallYear] });
     }
@@ -164,7 +167,7 @@
     else if (P.retirement.together) parts.push(`You both retire at the end of ${ry - 1} (${n1} ${a1}, ${n2} ${a2}).`);
     else parts.push(`Full-time work ends after ${ry - 1}.`);
     if (sum.balanceAtRetirement) parts.push(`Savings reach about <b>${fmt.money(sum.balanceAtRetirement)}</b> by then in a typical market.`);
-    if (sum.successRate != null) parts.push(`The plan works in <b>${fmt.pct(sum.successRate)}</b> of ${a.mc.runs.toLocaleString()} market scenarios.`);
+    if (sum.successRate != null) parts.push(`The plan works in <b>${fmt.pct(sum.successRate)}</b> of ${a.mc.runs.toLocaleString()} market scenarios${sum.legacyGoal > 0 ? `, with at least ${fmt.money(sum.legacyGoal)} left` : ''}.`);
     const bridge = rows.filter((r) => r.year >= ry && r.year < Math.max(S.unlock.p1.year59, S.unlock.p2.year59));
     if (bridge.length) {
       const src = { cash: 0, rothBasis: 0, preTaxPenaltyFree: 0, rothConversions: 0, penalty: 0 };

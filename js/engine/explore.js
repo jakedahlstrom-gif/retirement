@@ -149,11 +149,12 @@
     const planPath = det.rows.map((r) => r.startTotal);
     const mc = E.monteCarlo(P, S, { runs: P.sim.runs, planPath, sepp, keepTotals: false, paths: opts.count || 100 });
     const start = E.portfolio(E.initState(P));
+    const goal = Math.max(0, Number(P.sim.legacyGoal) || 0);
     return {
       years: S.years.concat([S.yEnd + 1]), // Jan 1 of each year, through the year after the plan ends
-      paths: mc.paths.map((p) => ({ values: [Math.round(start)].concat(p.totals), failYear: p.failYear })),
+      paths: mc.paths.map((p) => ({ values: [Math.round(start)].concat(p.totals), failYear: p.failYear, short: goal > 0 && p.failYear == null && p.totals[p.totals.length - 1] < goal })),
       typical: [Math.round(start)].concat(det.rows.map((r) => Math.round(r.balances.total))),
-      successRate: mc.successRate, runs: mc.runs, retireYear: S.retireYear, endYear: S.yEnd,
+      goal, successRate: mc.successRate, runs: mc.runs, retireYear: S.retireYear, endYear: S.yEnd,
     };
   };
 
@@ -170,6 +171,7 @@
     const hist = RP.HISTORICAL_RETURNS || [];
     const { S, det, ret, sepp } = typical(P, true);
     const planPath = det.rows.map((r) => r.startTotal); // spending guardrails compare against this
+    const goal = Math.max(0, Number(P.sim.legacyGoal) || 0);
     const startIdx = Math.max(0, S.retireIdx);
     const span = S.n - startIdx;
     const first = hist.length ? hist[0][0] : 0;
@@ -196,7 +198,8 @@
         const res = E.simulate(P, S, { inv, cash: ret.cash }, { planPath, sepp, stopOnFail: true });
         let low = Infinity;
         for (let i = startIdx; i < S.n; i++) low = Math.min(low, res.totals[i]);
-        runs.push({ start: first + k, success: res.success, failYear: res.failYear, end: res.totals[S.n - 1], low });
+        const end = res.totals[S.n - 1];
+        runs.push({ start: first + k, success: res.success && !(goal > 0 && end < goal), failYear: res.failYear, end, low });
       }
       return { runs, successRate: runs.length ? runs.filter((r) => r.success).length / runs.length : null };
     };

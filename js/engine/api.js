@@ -126,6 +126,8 @@
       ssAt70: { p1: S.ssDetail.p1.annualAtClaimNoHaircut, p2: S.ssDetail.p2.annualAtClaimNoHaircut },
       ssDetail: S.ssDetail,
       shortfallYear: det.failYear,
+      legacyGoal: Math.max(0, Number(P.sim.legacyGoal) || 0),
+      endBalance: rows.length ? rows[rows.length - 1].balances.total : 0,
       mortgagePayoffYear: S.mortgagePayoffYear,
       unlock: S.unlock,
     };

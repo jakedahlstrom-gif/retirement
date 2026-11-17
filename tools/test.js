@@ -190,6 +190,60 @@ test('the 2025–2028 senior deduction lowers tax for people 65 and over, then e
   assert.strictEqual(tax(2027, 260000), tax(2029, 260000), 'gone by $250K');
 });
 
+console.log('Legacy goal');
+const withGoal = (g, raw) => E.resolvePlan(Object.assign({}, raw || { spending: { retirement: 105000 }, retirement: { p1Age: 55 } }, { sim: { legacyGoal: g } }));
+test('a goal of 0 changes nothing: same success, safe spending and rolled life as a plan without the field', () => {
+  const noField = JSON.parse(JSON.stringify(base)); delete noField.sim.legacyGoal;
+  const off = withGoal(0);
+  assert.strictEqual(E.successRate(off, RUNS), E.successRate(noField, RUNS));
+  assert.deepStrictEqual(E.safeSpending({ sim: { legacyGoal: 0 } }, { runs: RUNS }), E.safeSpending({}, { runs: RUNS }));
+  const a = E.rollLife({ sim: { legacyGoal: 0 } }, 7), b = E.rollLife({}, 7);
+  assert.strictEqual(a.end, b.end); assert.strictEqual(a.success, b.success); assert.strictEqual(a.rank, b.rank);
+  assert.strictEqual(a.missedGoal, false);
+  assert.strictEqual(E.monteCarlo(off, E.buildSchedule(off), { runs: 50 }).legacyMisses, 0);
+});
+test('raising the goal never raises the success rate', () => {
+  const r = [0, 500000, 2000000].map((g) => E.successRate(withGoal(g), RUNS));
+  assert.ok(r[0] >= r[1] && r[1] >= r[2], r.join(' >= '));
+  assert.ok(r[0] > r[2], 'the goal does bite on this plan');
+});
+test('an absurd goal gives 0% success; every run that lasted counts as a miss', () => {
+  const P = withGoal(1e9), S = E.buildSchedule(P);
+  const mc = E.monteCarlo(P, S, { runs: RUNS });
+  const ran = Object.values(mc.failYears).reduce((t, x) => t + x, 0);
+  assert.strictEqual(mc.successRate, 0);
+  assert.strictEqual(mc.legacyMisses, RUNS - ran);
+});
+test('safe spending with a $1M goal is lower than without', () => {
+  assert.ok(E.safeSpending({ sim: { legacyGoal: 1e6 } }, { runs: RUNS }).amount < E.safeSpending({}, { runs: RUNS }).amount);
+});
+test('the summary carries the goal and the typical path’s ending balance', () => {
+  const a = E.analyze({ sim: { legacyGoal: 750000 } }, { runs: 50 });
+  assert.strictEqual(a.summary.legacyGoal, 750000);
+  assert.strictEqual(a.summary.endBalance, a.det.rows[a.det.rows.length - 1].balances.total);
+  assert.strictEqual(E.slim(a).summary.legacyGoal, 750000);
+  assert.strictEqual(E.analyze({}, { runs: 50 }).summary.legacyGoal, 0);
+});
+test('history replay, futures and rolled lives all honor the goal', () => {
+  const h0 = E.historyReplay({}), h1 = E.historyReplay({ sim: { legacyGoal: 1e9 } });
+  assert.ok(h0.actual.successRate > 0);
+  assert.strictEqual(h1.actual.successRate, 0);
+  assert.ok(h1.actual.runs.some((r) => r.failYear == null && !r.success), 'lasted but missed the goal');
+  const f = E.futures({ sim: { legacyGoal: 1e9 } });
+  assert.strictEqual(f.goal, 1e9);
+  assert.ok(f.paths.every((p) => p.short === (p.failYear == null)));
+  const life = E.rollLife({}, 7);
+  assert.ok(life.success && !life.missedGoal);
+  const g = E.rollLife({ sim: { legacyGoal: life.end + 1000 } }, 7);
+  assert.strictEqual(g.success, false); assert.strictEqual(g.missedGoal, true); assert.strictEqual(g.failYear, null);
+  assert.strictEqual(g.legacyGoal, life.end + 1000);
+  assert.strictEqual(E.rollLife({ sim: { legacyGoal: life.end - 1000 } }, 7).success, true);
+});
+test('green light still works with a goal (it only gets pickier)', () => {
+  const a = E.greenLight({}, { runs: 100 }), b = E.greenLight({ sim: { legacyGoal: 1e6 } }, { runs: 100 });
+  assert.ok(a == null || b == null || b.amount == null || a.amount == null || b.amount >= a.amount);
+});
+
 console.log('Playbook');
 const book = E.slim(E.analyze({}, { mc: false }));
 const PB = RP.ui.playbook;
