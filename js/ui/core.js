@@ -132,6 +132,8 @@
     const [y, m, d] = String(iso).split('-').map(Number);
     return `${fmt.monthName(m)} ${d || 1}, ${y}`;
   };
+  /** Safe spending: "under $33K" when even the lowest amount tested fails, "$188K+" when the highest still works. */
+  fmt.safe = (safe) => (!safe || safe.amount == null ? '—' : safe.floor ? 'under ' + fmt.money(safe.amount) : fmt.money(safe.amount) + (safe.capped ? '+' : ''));
   /** A year's health coverage, in words. */
   fmt.coverage = (status) => ({ employer: 'Employer coverage', mncare: 'MinnesotaCare', ma: 'Medical Assistance', aca: 'MNsure with subsidy', 'aca-full': 'MNsure, full price', medicare: 'Medicare' }[status] || status);
 

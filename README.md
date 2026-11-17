@@ -19,8 +19,9 @@ A tab of things to play with. Nothing in it changes your plan until you tap
   of 100 and a grade. Tap it to see what each part means and what would raise it.
 - **The Mixer**: a little mixing desk. Faders for retirement age, spending,
   saving, returns, market swings, Social Security age, part-time work and how
-  long to plan for; pads for guardrails, Roth conversions, long-term care, an
-  inheritance, a crash at retirement and a lost decade. A needle gauge shows
+  long to plan for; nine pads for guardrails, Roth conversions, spending that
+  eases with age, long-term care, an inheritance, higher taxes, a crash at
+  retirement, a lost decade and a deeper Social Security cut. A needle gauge shows
   the chance of success and a glowing scope redraws the typical path as you
   drag (your plan stays behind it as a dashed ghost). Drag a fader's cap, tap
   its track, or double-tap to reset it.
@@ -71,6 +72,23 @@ on Compare › Deep dives and Plan › Deep dives:
   as they were.
 
 Engine: `js/engine/explore.js`. Screens: `js/ui/explore.js`.
+
+## This year's playbook
+
+A Home card that turns the plan into a to-do list for one year
+(`js/ui/playbook.js`):
+
+- **While you work**: what goes into each 401k, the HSA, Roth IRAs and the
+  bridge fund, next to the IRS limit for your ages (catch-ups at 50 and 60–63
+  included) and how much room is left. It flags income over the Roth IRA line.
+- **Once retired**: the monthly budget, which accounts to draw from, how much
+  to convert to Roth, and the income line to stay under for MinnesotaCare or
+  health subsidies.
+- **Dates and taxes**: Medicare sign-up, Social Security, 59½, the Rule of 55,
+  required withdrawals, kids' milestones, and the tax to expect.
+
+Open the full playbook to step through any year of the plan. Every year's
+details sheet links to its playbook, and back.
 
 ## Cash flow and progress
 

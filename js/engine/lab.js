@@ -62,17 +62,25 @@
     if (!(P.death.enabled && P.death.person === 'p1')) fader('part', 'Part-time', 0, 60000, 2500, pt.enabled ? pt.amount : 0);
     fader('life', 'Plan to age', 85, 105, 1, P.household.horizonAge);
 
+    // Choices in the top row, things that may happen to you below.
     pads.push({ key: 'guard', label: 'Guardrails', on: !!P.spending.guardrails.enabled });
     pads.push({ key: 'roth', label: 'Roth conversions', on: P.conversions.strategy !== 'none' });
+    pads.push({ key: 'slow', label: 'Spend less with age', on: P.spending.creepPct < 0 });
     pads.push({ key: 'care', label: 'Long-term care', on: !!P.health.ltc.enabled });
     pads.push({ key: 'gift', label: 'Inheritance', on: false });
+    pads.push({ key: 'taxes', label: 'Higher taxes', on: !!P.tax.futureRates.enabled });
     pads.push({ key: 'crash', label: 'Crash at retirement', on: !!R.stress.crash.enabled });
     pads.push({ key: 'lost', label: 'Lost decade', on: !!R.stress.lostDecade.enabled });
+    pads.push({ key: 'sscut', label: 'Deeper SS cut', on: P.ss.haircutPct >= E.MIX_SS_CUT });
     return { faders, pads, y0 };
   };
 
   /** The inheritance pad: this much arrives this many years from now. */
   E.MIX_GIFT = { amount: 250000, inYears: 10 };
+  /** "Spend less with age": retirement spending drifts down this much a year (after inflation), as it tends to in real life. */
+  E.MIX_SLOWDOWN = -1;
+  /** "Deeper SS cut": benefits trimmed this much instead of your plan's haircut. */
+  E.MIX_SS_CUT = 40;
 
   /**
    * A mix ({ faderKey: value, …, pads: { padKey: bool } }) as scenario
@@ -127,6 +135,9 @@
     if (padMoved('roth')) o['conversions.strategy'] = mix.pads.roth ? 'healthCap' : 'none';
     if (padMoved('care')) o['health.ltc.enabled'] = !!mix.pads.care;
     if (padMoved('gift') && mix.pads.gift) o['spending.oneTime'] = (P.spending.oneTime || []).concat([{ year: y0 + E.MIX_GIFT.inYears, amount: E.MIX_GIFT.amount, kind: 'windfall', label: 'Inheritance' }]);
+    if (padMoved('slow')) o['spending.creepPct'] = mix.pads.slow ? E.MIX_SLOWDOWN : 0;
+    if (padMoved('taxes')) o['tax.futureRates.enabled'] = !!mix.pads.taxes;
+    if (padMoved('sscut')) o['ss.haircutPct'] = mix.pads.sscut ? E.MIX_SS_CUT : RP.DEFAULT_PLAN.ss.haircutPct;
     if (padMoved('crash')) o['returns.stress.crash.enabled'] = !!mix.pads.crash;
     if (padMoved('lost')) o['returns.stress.lostDecade.enabled'] = !!mix.pads.lost;
     return o;

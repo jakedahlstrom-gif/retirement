@@ -717,6 +717,27 @@ body.locked .app, body.locked .tabbar, body.locked .sheet:not(.over-lock), body.
 .pc-val { font-variant-numeric: tabular-nums; color: var(--fg); }
 .pc-card .more-btn { margin-top: 10px; }
 
+/* This year's playbook */
+.pb-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.pb-short { display: grid; gap: 9px; margin-bottom: 12px; }
+.pb-row { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.pb-ic { width: 22px; height: 22px; border-radius: 50%; flex: none; display: grid; place-items: center; background: var(--inset-2); color: var(--muted); }
+.pb-ic svg { width: 14px; height: 14px; stroke-width: 2.2; }
+.pb-ic i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.ok > .pb-ic { background: var(--pos-soft); color: var(--pos); }
+.room > .pb-ic { background: var(--accent-soft); color: var(--accent); }
+.watch > .pb-ic { background: var(--warn-soft); color: var(--warn); }
+.pb-title { flex: 1; min-width: 0; color: var(--fg-2); }
+.pb-val { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--fg); white-space: nowrap; }
+.pb-list .pb-item { display: flex; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.pb-list .pb-item:last-child { border-bottom: 0; }
+.pb-item .pb-ic { margin-top: 1px; }
+.pb-main { flex: 1; min-width: 0; }
+.pb-line { display: flex; align-items: baseline; gap: 10px; }
+.pb-item .pb-title { color: var(--fg); font-weight: 600; font-size: 15px; }
+.pb-item p { margin: 3px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+.yr-playbook { border-top: 0; padding: 0 0 8px; }
+
 /* Earliest retirement age, under the slider */
 .earliest { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 12px; border-top: 0.5px solid var(--line-strong); font-size: 15px; transition: opacity .3s; }
 .earliest .e-label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
@@ -867,6 +888,7 @@ body.locked .app, body.locked .tabbar, body.locked .sheet:not(.over-lock), body.
 .dots button { width: 7px; height: 7px; border-radius: 4px; background: var(--on-sky); opacity: .35; transition: width .3s var(--ease-spring), opacity .2s; padding: 0; }
 .dots button.on { width: 22px; opacity: .95; box-shadow: 0 0 8px rgba(255, 255, 255, 0.4); }
 .chart-hint { text-align: center; color: var(--on-sky); font-size: 12.5px; margin: 8px 0 0; text-shadow: var(--sky-text-shadow); }
+.tcell-score b { font-weight: 650; color: var(--accent); }
 /* Tables scroll sideways under a pinned first column, so their card is solid */
 .table-card { padding: 4px 0; overflow: hidden; background: var(--card); }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
