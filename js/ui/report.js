@@ -121,6 +121,7 @@
       ['Social Security claims at', `${claim('p1')}, ${claim('p2')}`],
       ['Social Security cut', P.ss.haircutPct ? `${P.ss.haircutPct}% from ${P.ss.haircutYear}` : 'None'],
       ['Plan runs to', `${P.people[hz.horizonPerson].name} age ${hz.horizonAge}`],
+      P.sim.legacyGoal > 0 ? ['Leave at least', money(P.sim.legacyGoal)] : null,
       ['State income tax', hz.state === 'MN' ? 'Minnesota' : hz.stateTaxPct ? `${hz.stateTaxPct}% flat` : 'None'],
     ].filter(Boolean);
     const assume = section('Key assumptions', h('div.rpt-kv', kv.map(([k, v]) => h('div.rpt-kv-r', h('span.k', k), h('span.v', v)))));
