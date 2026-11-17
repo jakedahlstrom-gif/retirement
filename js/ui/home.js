@@ -109,10 +109,11 @@
     els.pct = h('span', '—');
     els.meter = h('span');
     els.safe = h('div.value-lg', '—');
+    els.goalLine = h('div.value-sub', { hidden: true });
     els.ringWrap = h('div.cell.ring-wrap', h('div.ring-glow'),
       h('div.label', { style: { display: 'flex', alignItems: 'center', gap: '5px' } }, 'Chance of success', UI.tipButton('success')),
       h('div.value-lg', els.pct, h('small', '%')),
-      h('div.meter', els.meter));
+      h('div.meter', els.meter), els.goalLine);
     const duo = h('div.card.duo', els.ringWrap, h('div.sep'),
       h('div.cell', h('div.label', { style: { display: 'flex', alignItems: 'center', gap: '5px' } }, 'Safe spending', UI.tipButton('safeSpend')),
         els.safe, h('div.value-sub', 'per year')));
@@ -294,6 +295,8 @@
     const pct = s.successRate;
     UI.countTo(els.pct, Math.round(pct * 100), (x) => String(Math.round(x)), 900, 0);
     els.meter.style.width = (pct * 100) + '%';
+    els.goalLine.hidden = !(s.legacyGoal > 0);
+    if (s.legacyGoal > 0) els.goalLine.textContent = `with ${fmt.money(s.legacyGoal)} left at the end`;
     els.ringWrap.classList.toggle('warn', pct < 0.9 && pct >= 0.75);
     els.ringWrap.classList.toggle('bad', pct < 0.75);
     if (lastSuccess != null && lastSuccess < 0.9 && pct >= 0.9) Home.celebrate();

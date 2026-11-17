@@ -260,6 +260,7 @@
     const ends = endsMemo.ends, mine = ends[k];
     let below = 0;
     for (let r = 0; r < runs; r++) if (ends[r] < mine) below++;
+    const goal = Math.max(0, Number(P.sim.legacyGoal) || 0);
     const rows = life.rows.map((r) => ({
       year: r.year, ages: r.ages, ret: r.returnPct / 100, start: Math.round(r.startTotal), end: Math.round(r.balances.total),
       retired: r.retired, income: Math.round(r.income.wages + r.income.partTime + r.income.ss + r.income.ui + r.income.disability + r.income.windfall),
@@ -268,8 +269,10 @@
     }));
     const geo = (list) => (list.length ? Math.exp(list.reduce((t, x) => t + Math.log(1 + x), 0) / list.length) - 1 : 0);
     const retRows = rows.filter((r) => r.retired);
+    const end = rows.length ? rows[rows.length - 1].end : 0;
+    const missedGoal = goal > 0 && life.success && end < goal; // lasted, but left less than the goal
     return {
-      k, runs, rows, failYear: life.failYear, success: life.success, end: rows.length ? rows[rows.length - 1].end : 0,
+      k, runs, rows, failYear: life.failYear, success: life.success && !missedGoal, end, legacyGoal: goal, missedGoal,
       rank: below / Math.max(1, runs - 1), retireYear: S.retireYear,
       avgReturn: geo(rows.map((r) => r.ret)), avgRetired: geo(retRows.map((r) => r.ret)),
       planReturn: geo(det.rows.map((r) => r.returnPct / 100)),

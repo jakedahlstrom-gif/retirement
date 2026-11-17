@@ -140,6 +140,7 @@
       R.allocation.enabled ? `Stock/bond mix: ${R.allocation.stocks}/${R.allocation.bonds}${R.allocation.glide.enabled ? `, gliding to ${R.allocation.glide.retiredStocks}% stocks at retirement` : ''}.` : null,
       `${P.sim.runs.toLocaleString()} simulated market histories per scenario, using the same random draws for every scenario so comparisons are fair.`,
       `Success means every year’s spending, taxes and penalties are paid through ${P.people[P.household.horizonPerson].name}’s age ${P.household.horizonAge}. Home equity isn’t counted unless you downsize.`,
+      P.sim.legacyGoal > 0 ? `Your goal: at least ${fmt.money(P.sim.legacyGoal)} (today’s dollars) must also be left at the end, or that market history doesn’t count as a success.` : null,
     ]);
     add('Work & saving', [
       `${n1} works through ${S ? S.unlock.p1.retireYear : '—'} and ${n2} through ${S ? S.unlock.p2.retireYear : '—'} (end of each year), unless a job loss, disability or death says otherwise.`,

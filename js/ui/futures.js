@@ -32,7 +32,7 @@
     const my = ++token;
     cancelAnimationFrame(raf);
     const css = (k) => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
-    const col = { ok: css('--pos'), bad: css('--bad'), acc: css('--accent'), muted: css('--muted'), line: css('--line-strong'), font: css('--font') };
+    const col = { ok: css('--pos'), bad: css('--bad'), warn: css('--warn'), acc: css('--accent'), muted: css('--muted'), line: css('--line-strong'), font: css('--font') };
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.clientWidth, H = canvas.clientHeight;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
@@ -63,11 +63,11 @@
     // One trail, drawn up to fraction k of its length
     const trail = (c, p, k, head) => {
       const last = Math.max(1, Math.floor(k * (n - 1)));
-      const fail = p.failYear != null;
+      const fail = p.failYear != null, short = !fail && p.short;
       c.save();
       c.beginPath(); c.rect(PAD.l, PAD.t, W, Y(0) + 1 - PAD.t); c.clip(); // the best futures run off the top
-      c.strokeStyle = fail ? col.bad : col.ok;
-      c.globalAlpha = fail ? 0.55 : 0.24;
+      c.strokeStyle = fail ? col.bad : short ? col.warn : col.ok;
+      c.globalAlpha = fail ? 0.55 : short ? 0.4 : 0.24;
       c.lineWidth = fail ? 1.3 : 1;
       c.lineJoin = c.lineCap = 'round';
       c.beginPath();
@@ -137,8 +137,9 @@
     RP.engineClient.explore('futures', P).then((res) => {
       if (closed) return; // closed or replaced while calculating
       const ends = res.paths.map((p) => (p.failYear != null ? 0 : p.values[p.values.length - 1])).sort((a, b) => a - b);
-      const lasting = res.paths.filter((p) => p.failYear == null).length;
-      const canvas = h('canvas.fu-canvas', { role: 'img', 'aria-label': `${res.paths.length} possible futures for your savings; ${lasting} last the whole plan` });
+      const goal = res.goal > 0;
+      const lasting = res.paths.filter((p) => p.failYear == null && !p.short).length; // with a goal: also left enough
+      const canvas = h('canvas.fu-canvas', { role: 'img', 'aria-label': `${res.paths.length} possible futures for your savings; ${lasting} ${goal ? 'meet your goal' : 'last the whole plan'}` });
       const who = RP.engine.resolvePlan(P);
       const age = who.household.horizonAge, name = who.people[who.household.horizonPerson].name;
       UI.mount(body,
@@ -148,12 +149,13 @@
         h('div.ss-legend',
           h('span.lg', h('i.x-sw', { style: { background: 'var(--pos)' } }), 'Lasts'),
           h('span.lg', h('i.x-sw', { style: { background: 'var(--bad)' } }), 'Runs short'),
+          goal ? h('span.lg', h('i.x-sw', { style: { background: 'var(--warn)' } }), 'Under your goal') : null,
           h('span.lg', h('i.pg-dash', { style: { borderTopStyle: 'solid', borderTopWidth: '2px' } }), 'Typical market')),
         h('div.x-stats', { style: { marginTop: '16px' } },
-          h('div.x-stat', h('div.label', 'Last to the end'), h('div.x-val' + (lasting >= 90 ? '.pos' : lasting < 75 ? '.neg' : ''), `${lasting} of ${res.paths.length}`)),
+          h('div.x-stat', h('div.label', goal ? 'Meet your goal' : 'Last to the end'), h('div.x-val' + (lasting >= 90 ? '.pos' : lasting < 75 ? '.neg' : ''), `${lasting} of ${res.paths.length}`)),
           h('div.x-stat', h('div.label', 'Worst 10% leave'), h('div.x-val', fmt.money(pct(ends, 0.1)))),
           h('div.x-stat', h('div.label', 'Best 10% leave'), h('div.x-val', fmt.money(pct(ends, 0.9))))),
-        h('p.x-note', `Across all ${res.runs.toLocaleString()} histories, ${fmt.pct(res.successRate)} last until ${name} is ${age}. The spread is why the plan is tested on many futures instead of one average: what matters most is the order of good and bad years early in retirement.`));
+        h('p.x-note', `Across all ${res.runs.toLocaleString()} histories, ${fmt.pct(res.successRate)} last until ${name} is ${age}${goal ? ` with at least ${fmt.money(res.goal)} left` : ''}. The spread is why the plan is tested on many futures instead of one average: what matters most is the order of good and bad years early in retirement.`));
       replay = () => draw(canvas, res);
       requestAnimationFrame(replay);
     }).catch((e) => { if (e.message !== 'cancelled') { console.error(e); UI.mount(body, h('p.tip-text', 'Couldn’t draw the futures.')); } });

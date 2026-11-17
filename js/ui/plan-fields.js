@@ -362,12 +362,13 @@
     },
     {
       key: 'sim', title: 'Simulation', icon: 'gear',
-      sub: (P) => `${P.sim.runs.toLocaleString()} runs · target ${P.sim.successTarget}%`,
+      sub: (P) => `${P.sim.runs.toLocaleString()} runs · target ${P.sim.successTarget}%` + (P.sim.legacyGoal > 0 ? ` · leave ${RP.ui.fmt.money(P.sim.legacyGoal)}` : ''),
       reset: ['sim'],
       fields: [
         { path: 'sim.runs', label: 'Runs per scenario', type: 'int', min: 100, max: 5000, step: 100, sliderMin: 200, sliderMax: 3000, tip: 'runs' },
         { path: 'sim.successTarget', label: 'Safe-spending target', ...pct(50, 99, 1), tip: 'safeSpend' },
         { path: 'sim.greenLightTarget', label: 'Green-light target', ...pct(50, 99, 1), tip: 'greenLight' },
+        { path: 'sim.legacyGoal', label: 'Leave at least', ...money(5000000, 25000, 2000000), tip: 'legacy' },
         { path: 'sim.coastTarget', label: 'Coast FIRE target', ...pct(50, 99, 1), tip: 'coast' },
         { path: 'sim.coastYear', label: 'Stop all saving in (Coast test)', type: 'year', ...yr(), nullable: true, adv: true, tip: 'coast' },
         { path: 'sim.seed', label: 'Random seed', type: 'int', min: 1, max: 999999999, step: 1, adv: true },

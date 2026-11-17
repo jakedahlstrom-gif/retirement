@@ -184,7 +184,8 @@
     const rets = E.mcReturns(P, S, runs, seed);
     const keep = opts.keepTotals !== false;
     const totals = keep ? new Float64Array(runs * n) : null;
-    let successes = 0;
+    const goal = Math.max(0, Number(P.sim.legacyGoal) || 0);
+    let successes = 0, legacyMisses = 0;
     const failYears = {};
     const penalties = [];
     const balRet = [];
@@ -194,13 +195,16 @@
         planPath: opts.planPath, sepp: opts.sepp, stopOnFail: true, startIdx: opts.startIdx, state: opts.state,
       });
       if (r < (opts.paths || 0)) paths.push({ totals: res.totals.map(Math.round), failYear: res.failYear });
-      if (res.success) successes++;
+      if (res.success) {
+        // Lasted the whole plan: it only counts if enough is left at the end.
+        if (goal > 0 && res.totals[n - 1] < goal) legacyMisses++; else successes++;
+      }
       else failYears[res.failYear] = (failYears[res.failYear] || 0) + 1;
       penalties.push(res.penaltiesTotal);
       if (res.balanceAtRetirement != null) balRet.push(res.balanceAtRetirement);
       if (keep) for (let i = 0; i < n; i++) totals[r * n + i] = res.totals[i];
     }
-    const out = { runs, successRate: successes / runs, failYears };
+    const out = { runs, successRate: successes / runs, failYears, legacyMisses };
     if (opts.paths) out.paths = paths;
     if (keep && opts.rawTotals) out.totals = totals;
     if (keep) {
