@@ -101,6 +101,27 @@ details sheet links to its playbook, and back.
 - **Progress** (Plan › Tools): each annual check-in saves your savings and the
   path the plan expected. Later check-ins show whether you're ahead or behind,
   adjusted for inflation (`js/ui/progress.js`).
+- **Plan report** (Plan › Tools): one or two pages to print or save as a PDF
+  for a spouse or an advisor: the headline numbers, a projection chart, key
+  assumptions and dates, the retirement paycheck, this year's playbook, the
+  watch list and a year-by-year table (`js/ui/report.js`).
+
+## Once you're retired
+
+When everyone in the plan has stopped working, Home changes its question from
+"when can I retire?" to "how much can I spend?". The top of the screen shows
+safe spending per month and the chance the money lasts, and the
+retirement-age slider gives way to a spending slider with a one-tap **Use**
+for the safe amount. It follows the plan, so a scenario where you're still
+working shows the usual countdown.
+
+## Leaving something behind
+
+Plan › Simulation › **Leave at least** sets an amount (today's dollars) you
+want left at the end of the plan. With it set, a market scenario only counts
+as a success if the money lasts and at least that much remains, so safe
+spending, the earliest retirement age, the levers and the Lab all aim for it.
+Zero turns it off.
 
 ## Little delights
 
