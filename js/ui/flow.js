@@ -20,10 +20,15 @@
   F.items = function (r, P) {
     const keep = (list) => list.filter((x) => x.value > 1).sort((a, b) => b.value - a.value);
     const spendLeftover = P.contributions.leftoverTo === 'spend' || (P.sim.coastYear && r.year >= P.sim.coastYear);
+    // Refundable credits can make income tax negative: that's money in. Extras can be negative too
+    // (a downsized home that costs less to run): that comes off everyday spending.
+    const incomeTax = r.taxes.federal + r.taxes.state;
+    const lessExtras = Math.min(0, r.spending.extras);
     const ins = keep([
       { key: 'work', label: 'Paychecks', value: r.income.wages + r.income.partTime + r.income.ui + r.income.disability, color: 'var(--muted)' },
       { key: 'ss', label: 'Social Security', value: r.income.ss, color: 'var(--s2)' },
       { key: 'windfall', label: 'Windfalls', value: r.income.windfall, color: 'var(--accent)' },
+      { key: 'credits', label: 'Tax credits', value: Math.max(0, -incomeTax), color: 'var(--pos)' },
       { key: 'cash', label: 'Cash & brokerage', value: r.src.cash, color: 'var(--s3)' },
       { key: 'roth', label: 'Roth', value: r.src.rothBasis + r.src.rothConversions + r.src.rothEarnings, color: 'var(--s1)' },
       { key: 'pre', label: '401k / IRA', value: r.src.preTax, color: 'var(--s4)' },
@@ -33,12 +38,12 @@
     ]);
     const outs = keep([
       // A paid-off mortgage shows as a negative adjustment: it comes off everyday spending.
-      { key: 'spend', label: 'Everyday spending', value: r.spending.core + r.spending.medicalGrowth + r.spending.mortgageAdj + (spendLeftover ? r.saving.leftover : 0), color: 'var(--accent)' },
-      { key: 'extras', label: 'Extras', value: r.spending.extras, color: 'var(--s3)' },
+      { key: 'spend', label: 'Everyday spending', value: r.spending.core + r.spending.medicalGrowth + r.spending.mortgageAdj + lessExtras + (spendLeftover ? r.saving.leftover : 0), color: 'var(--accent)' },
+      { key: 'extras', label: 'Extras', value: Math.max(0, r.spending.extras), color: 'var(--s3)' },
       { key: 'health', label: 'Health premiums', value: r.spending.health, color: 'var(--warn)' },
       { key: 'daycare', label: 'Daycare', value: r.spending.daycare, color: 'var(--s4)' },
       { key: 'college', label: 'College', value: r.spending.college, color: 'var(--s6)' },
-      { key: 'tax', label: 'Taxes', value: r.taxes.federal + r.taxes.state + r.taxes.fica, color: 'var(--s5)' },
+      { key: 'tax', label: 'Taxes', value: Math.max(0, incomeTax) + r.taxes.fica, color: 'var(--s5)' },
       { key: 'pen', label: 'Penalties', value: r.taxes.penalty, color: 'var(--bad)' },
       { key: 'saveRet', label: 'Saved for retirement', value: r.saving.pre401k + r.saving.hsa + r.saving.rothIra + r.saving.mega, color: 'var(--pos)' },
       { key: 'saveTax', label: P.contributions.leftoverTo === 'cash' ? 'Saved to cash' : 'Saved to brokerage', value: r.saving.taxable + (spendLeftover ? 0 : r.saving.leftover), color: 'var(--s1)' },

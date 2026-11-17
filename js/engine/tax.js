@@ -61,7 +61,7 @@
    * Federal income tax.
    * x = { ordinary, preferential (qualified dividends + long-term gains), filing,
    *       count65, kidsUnder17, otherDependents, earnedIncome, nii, magi,
-   *       rateMult, deflator }
+   *       rateMult, deflator, year (for rules that expire) }
    * Returns { tax, beforeCredits, credits, refundableCredit, taxableIncome, marginal }.
    */
   T.federalTax = function (x, params) {
@@ -69,7 +69,12 @@
     const filing = x.filing;
     const mult = x.rateMult || 1;
     const deflator = x.deflator || 1;
-    const std = F.std[filing] + (F.addl65[filing] || 0) * (x.count65 || 0);
+    let std = F.std[filing] + (F.addl65[filing] || 0) * (x.count65 || 0);
+    const sr = F.senior;
+    if (sr && x.count65 > 0 && x.year != null && x.year <= sr.lastYear) {
+      const over = Math.max(0, (x.magi || 0) - (sr.phaseout[filing] || sr.phaseout.single));
+      std += x.count65 * Math.max(0, sr.amount - sr.phaseoutRate * over);
+    }
     const ordinary = Math.max(0, x.ordinary);
     const pref = Math.max(0, x.preferential || 0);
     // The standard deduction is used against ordinary income first.

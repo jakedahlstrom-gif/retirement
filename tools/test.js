@@ -18,8 +18,8 @@ for (const f of [
   'js/engine/util.js', 'data/historical-returns.js', 'js/engine/defaults.js', 'js/engine/tax.js',
   'js/engine/socialsecurity.js', 'js/engine/health.js', 'js/engine/schedule.js', 'js/engine/simulate.js',
   'js/engine/montecarlo.js', 'js/engine/api.js', 'js/engine/scenarios.js', 'js/engine/slim.js', 'js/engine/levers.js', 'js/engine/explore.js', 'js/engine/lab.js',
-  // UI helpers that don't touch the page: the setup guide's plan builder, the cash-flow groups
-  'js/ui/core.js', 'js/ui/setup.js', 'js/ui/flow.js',
+  // UI helpers that don't touch the page: the setup guide's plan builder, the cash-flow groups, the playbook's lists
+  'js/ui/core.js', 'js/ui/setup.js', 'js/ui/flow.js', 'js/ui/playbook.js',
 ]) require(path.join(ROOT, f));
 const E = RP.engine;
 
@@ -161,7 +161,9 @@ test('history replay uses every complete stretch, and "your returns" averages yo
 });
 
 test('each year’s cash flow balances: money in equals money out', () => {
-  for (const raw of [{}, { jobLoss: { p1: { enabled: true } }, college: { enabled: true }, mortgage: { enabled: true }, spending: { oneTime: [{ year: 2031, amount: 40000, kind: 'windfall' }] } }]) {
+  const refund = { income: { p1: { salary: 30000 }, p2: { salary: 0 } }, spending: { working: 30000 } }; // refundable credits: income tax below zero
+  const cheaper = { housing: { downsize: { enabled: true, year: 2040 } } }; // a downsized home costs less to run: negative "extras"
+  for (const raw of [{}, refund, cheaper, { jobLoss: { p1: { enabled: true } }, college: { enabled: true }, mortgage: { enabled: true }, spending: { oneTime: [{ year: 2031, amount: 40000, kind: 'windfall' }] } }]) {
     const a = E.slim(E.analyze(raw, { mc: false }));
     for (const r of a.rows) {
       const { ins, outs } = RP.ui.flow.items(r, a.plan);
@@ -180,6 +182,49 @@ test('possible futures: 100 whole lives from the same runs as the headline numbe
   assert.ok(f.paths.filter((p) => p.failYear != null).every((p) => p.values[p.values.length - 1] === 0), 'futures that run short end at $0');
 });
 
+test('the 2025–2028 senior deduction lowers tax for people 65 and over, then expires', () => {
+  const tax = (year, magi) => RP.tax.federalTax({ ordinary: magi, preferential: 0, filing: 'mfj', count65: 2, magi, year }, RP.DEFAULT_PLAN.tax).tax;
+  const F = RP.DEFAULT_PLAN.tax.federal;
+  assert.ok(Math.abs(tax(2029, 100000) - tax(2027, 100000) - 2 * F.senior.amount * 0.12) < 1, 'two full deductions in the 12% bracket');
+  assert.ok(tax(2027, 200000) < tax(2029, 200000), 'partly phased out at $200K');
+  assert.strictEqual(tax(2027, 260000), tax(2029, 260000), 'gone by $250K');
+});
+
+console.log('Playbook');
+const book = E.slim(E.analyze({}, { mc: false }));
+const PB = RP.ui.playbook;
+const itemsOf = (pb, key) => (pb.groups.find((g) => g.key === key) || { items: [] }).items;
+test('a working year lists each account against its limit', () => {
+  const pb = PB.build(book, 2027), P = book.plan, L = P.tax.limits;
+  const k = itemsOf(pb, 'save').find((it) => it.title === P.people.p1.name + '’s 401k');
+  assert.strictEqual(k.tone, 'room');
+  assert.ok(k.detail.includes(RP.ui.fmt.money(L.k401 - P.contributions.p1_401k.amount) + ' of room'), k.detail);
+  assert.strictEqual(itemsOf(pb, 'save').find((it) => it.title === 'HSA').tone, 'ok');
+  assert.ok(!pb.partial && pb.working);
+});
+
+test('catch-up contributions raise the limit from 50', () => {
+  const P = book.plan, y = P.people.p1.birthYear + 50;
+  const k = itemsOf(PB.build(book, y), 'save')[0];
+  assert.ok(k.detail.includes((P.tax.limits.k401 + P.tax.limits.catchup50).toLocaleString('en-US')), k.detail);
+});
+
+test('a retired year has a budget, where it comes from, and the income line to stay under', () => {
+  const y = book.summary.retireYear, pb = PB.build(book, y), r = book.rows.find((x) => x.year === y);
+  assert.ok(!pb.working && !itemsOf(pb, 'save').length);
+  assert.strictEqual(itemsOf(pb, 'spend')[0].title, 'Monthly budget');
+  assert.ok(itemsOf(pb, 'spend').some((it) => it.title.startsWith('Draw from')));
+  assert.strictEqual(itemsOf(pb, 'convert').length, r.capKind === 'mncare' ? 2 : 1);
+  assert.ok(itemsOf(pb, 'dates').some((it) => it.title === 'First year of retirement'));
+});
+
+test('the playbook opens on a year the plan covers, and a part-year is marked', () => {
+  const y = PB.defaultYear(book);
+  assert.ok(book.rows.some((r) => r.year === y));
+  assert.strictEqual(PB.build(book, book.rows[0].year).partial, book.rows[0].frac < 0.999);
+  assert.strictEqual(PB.build(book, 1999), null);
+});
+
 console.log('The Lab');
 test('the Mixer starts where the plan is, and only what moved becomes an override', () => {
   const k = E.mixerKnobs(base);
@@ -192,6 +237,9 @@ test('the Mixer starts where the plan is, and only what moved becomes an overrid
   assert.strictEqual(o['spending.retirement'], Math.round(base.spending.retirement * 0.9));
   assert.strictEqual(o['returns.stress.crash.enabled'], true);
   assert.strictEqual(o['spending.oneTime'].slice(-1)[0].amount, E.MIX_GIFT.amount);
+  const slow = E.mixOverrides(base, Object.assign({}, start, { pads: Object.assign({}, start.pads, { slow: true, sscut: true }) }));
+  assert.deepStrictEqual(slow, { 'spending.creepPct': E.MIX_SLOWDOWN, 'ss.haircutPct': E.MIX_SS_CUT });
+  assert.ok(E.successRate(E.applyOverrides(base, { 'spending.creepPct': E.MIX_SLOWDOWN }), RUNS) >= E.successRate(base, RUNS), 'spending less with age should not hurt');
   for (const [path, v] of Object.entries(o)) assert.deepStrictEqual(RP.util.getPath(E.applyOverrides(base, o), path), v);
 });
 
