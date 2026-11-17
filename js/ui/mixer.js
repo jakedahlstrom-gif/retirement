@@ -2,7 +2,7 @@
  * mixer.js — the Mixer: a mixing desk for your plan.
  *
  * Faders for the big choices (and two things you don't control: returns and
- * how wildly markets swing), pads for on/off "what ifs", a needle gauge for
+ * how wildly markets swing), nine pads for on/off "what ifs", a needle gauge for
  * the chance of success and a glowing scope that redraws the typical path
  * while you drag. Nothing touches your plan until you Apply it or save the
  * mix as a scenario.
@@ -25,15 +25,18 @@
   let st = null;
   let els = null;
 
-  const PAD_COLORS = { guard: '#5fe0b0', roth: '#a98bff', care: '#ff8a7a', gift: '#ffd166', crash: '#ff5c7a', lost: '#ffa45c' };
-  const PAD_NOTES = {
+  const PAD_COLORS = { guard: '#5fe0b0', roth: '#a98bff', slow: '#6fc8ff', care: '#ff8a7a', gift: '#ffd166', taxes: '#ff8ac2', crash: '#ff5c7a', lost: '#ffa45c', sscut: '#c9a2ff' };
+  const padNotes = (P) => ({
     guard: 'Spend a little less after a bad stretch',
     roth: 'Move pre-tax money to Roth in low-tax years',
-    care: `Long-term care costs late in life`,
+    slow: `Spending eases ${-E.MIX_SLOWDOWN}% a year in retirement`,
+    care: 'Long-term care costs late in life',
     gift: `+${fmt.money(E.MIX_GIFT.amount)} in ${E.MIX_GIFT.inYears} years`,
+    taxes: `Tax rates ${P.tax.futureRates.increasePct}% higher from ${P.tax.futureRates.startYear}`,
     crash: 'Markets fall 30% the year you retire',
     lost: 'Ten flat years right after you retire',
-  };
+    sscut: `Benefits cut ${E.MIX_SS_CUT}% from ${P.ss.haircutYear}`,
+  });
 
   // ------------------------------------------------------------ formatting
   function show(key, v) {
@@ -168,7 +171,7 @@
 
   function pad(p) {
     const b = h('button.pad', { 'aria-pressed': String(!!st.mix.pads[p.key]), style: { '--pad': PAD_COLORS[p.key] || 'var(--accent)' } },
-      h('span.pad-led'), h('b', p.label), h('small', PAD_NOTES[p.key] || ''));
+      h('span.pad-led'), h('b', p.label), h('small', padNotes(st.P)[p.key] || ''));
     b.addEventListener('click', () => {
       st.mix.pads[p.key] = !st.mix.pads[p.key];
       b.setAttribute('aria-pressed', String(st.mix.pads[p.key]));

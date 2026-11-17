@@ -288,6 +288,7 @@
           h('span.pill', `${P.people.p1.name} ${r.ages.p1}${r.alive.p1 ? '' : ' †'} · ${P.people.p2.name} ${r.ages.p2}${r.alive.p2 ? '' : ' †'}`),
           h('span.pill' + (r.working ? '' : '.accent'), r.working ? 'Working' : 'Retired'),
           h('span.pill', statusName)),
+        sc.id === store().state.active ? h('button.more-btn.yr-playbook', { type: 'button', onclick: () => UI.playbook.open(year) }, `What to do in ${year}: the playbook →`) : null,
         h('div.subhead', { style: { padding: '8px 2px 4px' } }, 'Where the money went'),
         h('div.card.flow-card', UI.flow.diagram(r, P), h('div.flow-axis', h('span', 'In'), h('span', 'Out'))),
         h('div.subhead', { style: { padding: '8px 2px 4px' } }, 'Money in'), h('div.list', inn),
@@ -336,12 +337,20 @@
   function renderTable() {
     const ser = series();
     if (!ser.length) { UI.mount(els.table); return; }
-    const head = ['Scenario', 'Success', 'Safe spend', 'At retirement', 'Penalties', 'MinnesotaCare through', 'At 70'];
-    const rows = ser.map(({ sc, a, m }) => [
-      h('span.tcell-name', h('span.badge-diff', { style: { background: C.scenarioColor(sc.color) } }), C.short(sc.name, 16)),
-      fmt.pct(a.summary.successRate), m.safe ? fmt.money(m.safe.amount) : '…', fmt.money(a.summary.balanceAtRetirement),
-      fmt.money(a.summary.totalPenalties), a.summary.lastMnCareYear ? String(a.summary.lastMnCareYear) : '—', fmt.money(a.summary.balanceAt70),
-    ]);
+    const mn = ser.some(({ a }) => a.summary.lastMnCareYear);
+    const score = ({ a, m }) => { if (!m.safe) return '…'; const sc = RP.engine.planScore(a, m.safe); return h('span.tcell-score', h('b', sc.grade), ` ${sc.score}`); };
+    const cols = [
+      ['Scenario', ({ sc }) => h('span.tcell-name', h('span.badge-diff', { style: { background: C.scenarioColor(sc.color) } }), C.short(sc.name, 16))],
+      ['Success', ({ a }) => fmt.pct(a.summary.successRate)],
+      ['Score', score],
+      ['Safe spend', ({ m }) => (m.safe ? fmt.safe(m.safe) : '…')],
+      ['At retirement', ({ a }) => fmt.money(a.summary.balanceAtRetirement)],
+      ['Penalties', ({ a }) => fmt.money(a.summary.totalPenalties)],
+      mn ? ['MinnesotaCare through', ({ a }) => (a.summary.lastMnCareYear ? String(a.summary.lastMnCareYear) : '—')] : null,
+      ['At 70', ({ a }) => fmt.money(a.summary.balanceAt70)],
+    ].filter(Boolean);
+    const head = cols.map(([t]) => t);
+    const rows = ser.map((x) => cols.map(([, f]) => f(x)));
     UI.mount(els.table, h('div.card.table-card', h('div.table-scroll', h('table.sum-table',
       h('thead', h('tr', head.map((t) => h('th', t)))),
       h('tbody', rows.map((r, i) => h('tr', { onclick: () => { focusId = ser[i].sc.id; Cmp.render(); } }, r.map((c) => h('td', c)))))))));

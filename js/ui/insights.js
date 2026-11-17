@@ -75,12 +75,12 @@
     // RMDs & IRMAA
     const irmaa = rows.filter((r) => r.health.irmaa > 0).map((r) => r.year);
     if (irmaa.length) {
-      out.push({ level: 'info', title: `IRMAA surcharges in ${yearsText(irmaa)}`, text: 'High income at Medicare age adds extra Medicare premiums.', fix: 'More Roth conversions before 65 can lower future RMDs.', path: 'conversions.afterMedicare', years: irmaa });
+      out.push({ level: 'info', title: `IRMAA surcharges in ${yearsText(irmaa)}`, text: 'High income at Medicare age adds extra Medicare premiums.', fix: Math.min(rows[0].ages.p1, rows[0].ages.p2) < 63 ? 'More Roth conversions before 65 can lower future RMDs.' : 'Spreading withdrawals and conversions over lower-income years can help.', path: 'conversions.afterMedicare', years: irmaa });
     }
     const rmdRows = rows.filter((r) => r.from.rmd > 0);
     if (rmdRows.length) {
       const first = rmdRows[0];
-      out.push({ level: 'info', title: `Required withdrawals start in ${first.year}`, text: `About ${fmt.money(first.from.rmd)} that year, taxed as income.`, fix: 'Roth conversions in your 60s shrink these.', path: 'conversions.afterMedicare', years: [first.year] });
+      out.push({ level: 'info', title: `Required withdrawals start in ${first.year}`, text: `About ${fmt.money(first.from.rmd)} that year, taxed as income.`, fix: first.year - S.y0 >= 3 ? (Math.max(rows[0].ages.p1, rows[0].ages.p2) < 60 ? 'Roth conversions in your 60s shrink these.' : 'Roth conversions before then shrink these.') : 'They’re already counted in your taxes and spending.', path: 'conversions.afterMedicare', years: [first.year] });
     }
     // Planned savings the paycheck can't cover
     const tight = rows.filter((r) => { const want = plannedTaxable(P, r.year, r); return r.working && r.year > S.y0 && want - r.saving.taxable > Math.max(2500, 0.1 * want); }).map((r) => r.year);
@@ -98,7 +98,7 @@
     if (!P.meta.isSample && settings.changedSince && Date.now() - new Date(settings.changedSince + 'T00:00:00').getTime() > 30 * 864e5) {
       out.push({ level: 'info', title: 'Back up your changes', text: `Your plan is stored only in this browser. Changes since ${fmt.date(settings.changedSince)} aren’t in a backup file yet.`, fix: 'Export a backup.', path: null, years: [], action: 'backup' });
     }
-    if (metrics && metrics.coast && metrics.coast.year == null) {
+    if (S.retireYear > S.y0 && metrics && metrics.coast && metrics.coast.year == null) {
       out.push({ level: 'info', title: 'No Coast FIRE date yet', text: 'Stopping saving in any year before retiring keeps success under target.', fix: 'Keep saving; it’s working.', path: 'sim.coastTarget', years: [] });
     }
     const order = { bad: 0, warn: 1, info: 2 };
@@ -127,7 +127,8 @@
       const y = last ? last.year + (dc.lastYearFraction < 1 && last.year === dc.lastYear ? 0 : 1) : dc.firstYear;
       list.push({ key: 'daycare', emoji: '🎒', title: 'Daycare-free', year: y });
     }
-    if (metrics && metrics.coast && metrics.coast.year) list.push({ key: 'coast', emoji: '🏝️', title: 'Coast FIRE', year: metrics.coast.year });
+    const retiredNow = S.retireYear <= S.y0; // already there: Coast FIRE and the green light no longer apply
+    if (!retiredNow && metrics && metrics.coast && metrics.coast.year) list.push({ key: 'coast', emoji: '🏝️', title: 'Coast FIRE', year: metrics.coast.year });
     const p1Age = S.retireYear - 1 - P.people.p1.birthYear;
     list.push({ key: 'retired', emoji: '🎉', title: `Retired at ${p1Age}`, year: S.retireYear });
     const u1 = S.unlock.p1, u2 = S.unlock.p2;
@@ -137,7 +138,7 @@
     list.push({ key: 'medicare', emoji: '🩺', title: `${n1} on Medicare`, year: u1.medicareYear });
     list.push({ key: 'ss1', emoji: '💌', title: `${n1}’s Social Security`, year: S.ssDetail.p1.claimYear });
     list.push({ key: 'ss2', emoji: '💌', title: `${n2}’s Social Security`, year: S.ssDetail.p2.claimYear });
-    if (metrics && metrics.green && metrics.green.amount) {
+    if (!retiredNow && metrics && metrics.green && metrics.green.amount) {
       const hit = rows.find((r) => r.balances.total >= metrics.green.amount);
       if (hit) list.push({ key: 'green', emoji: '🟢', title: 'Green light', year: hit.year });
     }
@@ -182,7 +183,9 @@
       parts.push(`72(t) payments of about <b>${fmt.money(a.sepp.payment)}/yr</b> from ${esc(P.people[a.sepp.person].name)}’s 401k (${a.sepp.startYear}–${a.sepp.endYear}) cut penalties from ${fmt.money(a.sepp.withoutPenalties)} to <b>${fmt.money(sum.totalPenalties)}</b>.`);
     } else if (a.sepp && a.sepp.note) parts.push(`72(t): ${a.sepp.note}`);
     parts.push(`Social Security starts in ${S.ssDetail.p1.claimYear} and ${S.ssDetail.p2.claimYear}.`);
-    if (metrics && metrics.safe && metrics.safe.amount) parts.push(`You could spend up to <b>${fmt.money(metrics.safe.amount)}/yr</b> and stay at ${P.sim.successTarget}% success.`);
+    if (metrics && metrics.safe && metrics.safe.amount) parts.push(metrics.safe.floor
+      ? `Even ${fmt.money(metrics.safe.amount)}/yr of spending doesn’t reach ${P.sim.successTarget}% success.`
+      : `You could spend up to <b>${fmt.money(metrics.safe.amount)}${metrics.safe.capped ? '+' : ''}/yr</b> and stay at ${P.sim.successTarget}% success.`);
     const e = metrics && metrics.earliest;
     if (e && !e.retired) {
       const cur = P.retirement.p1Age;

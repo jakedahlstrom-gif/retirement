@@ -93,7 +93,7 @@
     const fed = T.federalTax({
       ordinary: agi - pref, preferential: pref, filing, count65: S.count65[i],
       kidsUnder17: S.kidsUnder17[i], otherDependents: S.otherDependents[i], earnedIncome: earned,
-      nii: (inc.interest + inc.divs + inc.gains) * k, magi: agi, rateMult: S.rateMult[i], deflator: S.deflator[i],
+      nii: (inc.interest + inc.divs + inc.gains) * k, magi: agi, rateMult: S.rateMult[i], deflator: S.deflator[i], year: S.years[i],
     }, P.tax);
     let state;
     if (S.state[i] === 'MN') {
@@ -565,6 +565,7 @@
       retired: S.years[i] >= S.retireYear,
       income: {
         wages: S.wages.p1[i] + S.wages.p2[i] + S.severance.p1[i] + S.severance.p2[i],
+        wagesP1: S.wages.p1[i] + S.severance.p1[i], wagesP2: S.wages.p2[i] + S.severance.p2[i],
         partTime: S.partTime.p1[i] + S.partTime.p2[i],
         ss: S.ss.p1[i] + S.ss.p2[i], ssP1: S.ss.p1[i], ssP2: S.ss.p2[i],
         ui: S.ui[i], disability: S.disability[i], windfall: S.windfall[i] + S.otherIncome[i] + Math.max(0, S.downsizeNet[i]),
@@ -576,6 +577,7 @@
       },
       saving: {
         pre401k: S.def401k.p1[i] + S.def401k.p2[i], match: S.match.p1[i] + S.match.p2[i],
+        k401: { p1: S.def401k.p1[i], p2: S.def401k.p2[i] }, matchBy: { p1: S.match.p1[i], p2: S.match.p2[i] },
         hsa: S.hsaContrib[i], rothIra: S.rothIra[i], mega: S.mega.p1[i] + S.mega.p2[i],
         taxable: x.toTaxable, leftover: x.leftover, edu: S.eduContrib[i],
       },
@@ -611,6 +613,7 @@
       balances: { ...b, total: x.endTotal, homeEquity: S.homeEquity[i], netWorth: x.endTotal + b.edu + S.homeEquity[i] },
       rungs: { p1: x.s.roth.p1.rungs.map((r) => r.slice()), p2: x.s.roth.p2.rungs.map((r) => r.slice()) },
       startTotal: x.startTotal,
+      frac: S.frac[i], // share of the calendar year this row covers (the first year starts at your balance date)
       returnPct: x.rInv * 100,
     };
   }

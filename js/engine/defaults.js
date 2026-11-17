@@ -196,6 +196,8 @@
         },
         std: { mfj: 32200, single: 16100, hoh: 24150 },
         addl65: { mfj: 1650, single: 2050, hoh: 2050 },
+        // Extra deduction for each person 65+ (tax years 2025–2028), shrinking 6% of income over the line
+        senior: { amount: 6000, lastYear: 2028, phaseoutRate: 0.06, phaseout: { mfj: 150000, single: 75000, hoh: 75000 } },
         ltcg: { mfj: [98900, 613700], single: [49450, 545500], hoh: [66200, 579600] },
         ctc: 2200, ctcRefundable: 1700, odc: 500,
         ctcPhaseout: { mfj: 400000, single: 200000, hoh: 200000 }, // not inflation-adjusted
@@ -220,7 +222,11 @@
         ssRate: 0.062, medicareRate: 0.0145, wageBase: 184500,
         addlMedicareRate: 0.009, addlMedicareThreshold: { mfj: 250000, single: 200000, hoh: 200000 },
       },
-      limits: { k401: 24500, catchup50: 8000, catchup6063: 11250, total415: 72000, ira: 7500, iraCatchup: 1100 },
+      limits: {
+        k401: 24500, catchup50: 8000, catchup6063: 11250, total415: 72000, ira: 7500, iraCatchup: 1100,
+        hsaFamily: 8750, hsaCatchup55: 1000,
+        rothIraPhaseout: { mfj: [242000, 252000], single: [153000, 168000], hoh: [153000, 168000] }, // income where Roth IRA contributions phase out
+      },
       rmdAge: 75, // SECURE 2.0: 75 for anyone born 1960 or later
       irmaa: {
         mfj: [218000, 274000, 342000, 410000, 750000],

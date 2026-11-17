@@ -33,6 +33,7 @@
     return 'in ' + (months < 12 ? plural(months, 'month') : plural(Math.floor(months / 12), 'year'));
   }
   function togoText(months) {
+    if (months <= -12) return `Retired ${plural(Math.floor(-months / 12), 'year')}`;
     if (months <= 0) return 'Retirement is here';
     const y = Math.floor(months / 12), m = months % 12;
     return [y ? plural(y, 'year') : '', m ? plural(m, 'month') : ''].filter(Boolean).join(', ') + ' to go';
@@ -141,9 +142,10 @@
     els.milestone = h('div');
     els.levers = UI.levers.build();
     els.paycheck = UI.paycheck.build();
+    els.playbook = UI.playbook.card();
 
     // Order: when you retire → the big lever → where you stand → the path →
-    // what retirement pays → what needs attention → what would help →
+    // what to do this year → what retirement pays → what needs attention → what would help →
     // details on demand → what's next.
     UI.mount(root,
       els.hero,
@@ -151,6 +153,7 @@
       els.sampleBanner,
       duo,
       proj,
+      els.playbook,
       els.paycheck,
       els.alerts,
       els.levers,
@@ -182,14 +185,14 @@
   function updateAgeSub(P) {
     const year = P.people.p1.birthYear + P.retirement.p1Age;
     const p2 = P.retirement.together ? year - P.people.p2.birthYear : P.retirement.p2Age;
-    els.ageSub.textContent = `Work ends Dec ${year}` + (P.retirement.together ? ` · ${P.people.p2.name} ${p2}` : '');
+    els.ageSub.textContent = `Work ${year < new Date().getFullYear() ? 'ended' : 'ends'} Dec ${year}` + (P.retirement.together ? ` · ${P.people.p2.name} ${p2}` : '');
   }
 
   /** Refresh the input-driven parts immediately (before results arrive). */
   Home.syncInputs = function () {
     if (!els) return;
     const P = store().activePlan();
-    els.ageTitle.textContent = `${P.people.p1.name} retires at`;
+    els.ageTitle.textContent = `${P.people.p1.name} ${P.people.p1.birthYear + P.retirement.p1Age < new Date().getFullYear() ? 'retired' : 'retires'} at`;
     showOnSlider(els.ageSlider, P.retirement.p1Age);
     const lo = Number(els.ageSlider.min), hi = Number(els.ageSlider.max);
     UI.mount(els.ageScale, h('span', String(lo)), h('span', String(Math.round((lo + hi) / 2))), h('span', String(hi)));
@@ -306,6 +309,7 @@
     }
     if (els.chart) els.chart.update(chartData(a));
     UI.paycheck.update(a);
+    UI.playbook.update(a);
     els.postcardText.textContent = `Postcard from ${s.retireYear}`;
     els.postcard.hidden = s.retireYear <= a.schedule.y0; // only for a retirement still ahead
 
@@ -321,7 +325,7 @@
     if (!els) return;
     Home._metrics = Object.assign({}, Home._metrics || {}, m);
     const mm = Home._metrics;
-    if (mm.safe) UI.countTo(els.safe, mm.safe.amount, (x) => fmt.money(x), 900, 0);
+    if (mm.safe) UI.countTo(els.safe, mm.safe.amount, (x) => (mm.safe.floor ? '<' : '') + fmt.money(x) + (mm.safe.capped ? '+' : ''), 900, 0);
     if (mm.green) {
       UI.countTo(els.green, mm.green.amount || 0, (x) => (mm.green.amount ? fmt.money(x) : '—'));
       const a = Home._a;
@@ -369,8 +373,12 @@
     const a = Home._a, m = Home._metrics || {};
     const parts = [];
     if (a) parts.push(`Net worth ${fmt.money(a.summary.netWorthToday)}`);
-    if (m.coast) parts.push(`Coast FIRE ${m.coast.year || 'not yet'}`);
-    if (m.green && m.green.amount) parts.push(`Green light ${fmt.money(m.green.amount)}`);
+    // Coast FIRE and the green light are about getting to retirement: nothing to say once you're there.
+    const done = !!a && a.summary.retireYear <= a.schedule.y0;
+    els.coast.closest('.stat').hidden = els.green.closest('.stat').hidden = done;
+    if (m.safe && done) parts.push(`Safe spending ${fmt.safe(m.safe)}`);
+    if (m.coast && !done) parts.push(`Coast FIRE ${m.coast.year || 'not yet'}`);
+    if (m.green && m.green.amount && !done) parts.push(`Green light ${fmt.money(m.green.amount)}`);
     els.more.setSummary(parts.join(' · ') || '—');
   }
   function renderBrief() {
