@@ -738,6 +738,17 @@ body.locked .app, body.locked .tabbar, body.locked .sheet:not(.over-lock), body.
 .pb-item p { margin: 3px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
 .yr-playbook { border-top: 0; padding: 0 0 8px; }
 
+/* Retired mode (Home): safe spending in the hero, and the spending card in place of the retirement-age card */
+.hero-num.hero-spend { font-size: clamp(64px, 21vw, 92px); transition: opacity .3s; }
+.hero-spend small { font-size: 0.32em; font-weight: 300; letter-spacing: 0; margin-left: 6px; color: var(--on-sky-2); }
+.spend-card .card-title { margin-bottom: 4px; }
+.spend-card .value-lg small { font-size: 18px; font-weight: 300; margin-left: 2px; letter-spacing: 0; color: var(--muted); }
+.spend-card .slider { margin-top: 8px; }
+.spend-card .phase-row { margin-top: 0; padding-top: 4px; border-top: 0; }
+.spend-card .phase-row .e-use { white-space: nowrap; flex: none; }
+.spend-card .spend-help { font-size: 14px; color: var(--muted); }
+.spend-card .spend-help .e-label { display: block; }
+
 /* Earliest retirement age, under the slider */
 .earliest { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding-top: 12px; border-top: 0.5px solid var(--line-strong); font-size: 15px; transition: opacity .3s; }
 .earliest .e-label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
