@@ -155,7 +155,7 @@
         const runs = R.runs;
         if (!runs.length) { UI.mount(wrap, note('Your plan is longer than the market history on hand, so it can’t be replayed.')); return; }
         const fails = runs.filter((r) => !r.success);
-        const worst = runs.slice().sort((a, b) => (a.success === b.success ? (a.success ? a.end - b.end : a.failYear - b.failYear) : a.success ? 1 : -1))[0];
+        const worst = runs.slice().sort((a, b) => (a.success === b.success ? (a.success ? a.end - b.end : a.failYear == null || b.failYear == null ? a.end - b.end : a.failYear - b.failYear) : a.success ? 1 : -1))[0];
         const canvas = h('canvas', { role: 'img', 'aria-label': `Money left at the end for each historical start year; ${fails.length} of ${runs.length} run short` });
         const pct = R.successRate;
         UI.mount(wrap,
@@ -169,14 +169,14 @@
             const r = runs.find((x) => x.start === y);
             if (!r) return null;
             return h('div.row.sub', h('span.row-label', h('span.txt', `${name} (${y})`)),
-              h('span.row-value' + (r.success ? '' : '.x-bad'), r.success ? `${fmt.money(r.end)} left` : `Short ${r.failYear}`));
+              h('span.row-value' + (r.success ? '' : '.x-bad'), r.success ? `${fmt.money(r.end)} left` : r.failYear == null ? `${fmt.money(r.end)}, under goal` : `Short ${r.failYear}`));
           }),
           worst && !ERAS.some(([y]) => y === worst.start) ? h('div.row.sub', h('span.row-label', h('span.txt', `Toughest start (${worst.start})`)),
-            h('span.row-value' + (worst.success ? '' : '.x-bad'), worst.success ? `${fmt.money(worst.end)} left` : `Short ${worst.failYear}`)) : null),
+            h('span.row-value' + (worst.success ? '' : '.x-bad'), worst.success ? `${fmt.money(worst.end)} left` : worst.failYear == null ? `${fmt.money(worst.end)}, under goal` : `Short ${worst.failYear}`)) : null),
           note(histMode === 'matched'
             ? `Each run keeps history’s real ups and downs in their real order, scaled so they average the ${fmt.num(res.planReturn * 100, 1)}% your plan assumes in retirement. This tests the order of returns, which is the big risk in early retirement.`
             : `Real returns of a ${res.stocksPct}/${100 - res.stocksPct} stock/bond mix. History has been kinder than your assumptions: ${fmt.num(res.histReturn * 100, 1)}% a year after inflation, vs. the ${fmt.num(res.planReturn * 100, 1)}% your plan assumes.`),
-          note('Savings grow at your expected returns until you retire; from then on each run replays a different stretch of US history (S&P 500, 10-year Treasuries, 1871–2022). Only complete stretches are used.'));
+          note('Savings grow at your expected returns until you retire; from then on each run replays a different stretch of US history (S&P 500, 10-year Treasuries, 1871–2022). Only complete stretches are used.' + (P.sim.legacyGoal > 0 ? ` A run only counts as lasting if at least ${fmt.money(P.sim.legacyGoal)} is left at the end, your goal.` : '')));
         if (chart) chart.destroy();
         UI.charts.applyTheme();
         chart = new Chart(canvas.getContext('2d'), UI.charts.builders.history({ runs }));

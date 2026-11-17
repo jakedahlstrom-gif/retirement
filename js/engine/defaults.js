@@ -245,6 +245,7 @@
       successTarget: 90, // "safe spending" = most you can spend at this success rate
       greenLightTarget: 95,
       coastTarget: 90,
+      legacyGoal: 0, // optional: money still left at the end of the plan (today's dollars); 0 = off. A run only counts as a success if it also ends at or above this
       coastYear: null, // set by the Coast FIRE scenario: all saving stops this year
     },
   };

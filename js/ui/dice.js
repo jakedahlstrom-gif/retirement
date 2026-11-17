@@ -171,6 +171,7 @@
       if (cuts) lines.push(['shield', `Your guardrails trim spending in ${cuts} year${cuts === 1 ? '' : 's'} after bad stretches.`]);
       const ending = res.failYear != null
         ? h('div.dc-end.bad', h('b', `Runs short in ${res.failYear}`), h('span', `when ${hzName} is ${res.failYear - birth}`))
+        : res.missedGoal ? h('div.dc-end.bad', h('b', `${fmt.money(res.end)} left`), h('span', `under your ${fmt.money(res.legacyGoal)} goal`))
         : h('div.dc-end.ok', h('b', `${fmt.money(res.end)} left`), h('span', `when ${hzName} is ${P.household.horizonAge}`));
       const luck = Math.round(res.rank * 100);
       UI.mount(story,

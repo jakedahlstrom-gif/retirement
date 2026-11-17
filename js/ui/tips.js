@@ -5,6 +5,7 @@
 (function (RP) {
   'use strict';
   RP.TIPS = {
+    legacy: { title: 'Leave at least', text: 'An optional amount you’d like to have left at the end of the plan, for your kids, a charity or just a cushion, in today’s dollars. With a goal set, “success” means your money lasts and at least this much is still there at the end. Set it to $0 to turn it off.', more: 'Safe spending, the earliest retirement age and every other number that looks at your chance of success then aim for that, so they get more cautious as the goal grows.' },
     success: { title: 'Chance of success', text: 'We run your plan 1,000 times with different, random stock-market years. This is the share of those runs where your money lasts as long as you do, paying for all spending, taxes and penalties.', more: 'Above 90% is considered strong. It is an estimate based on your assumptions, not a promise.' },
     safeSpend: { title: 'Safe spending', text: 'The most you could spend each year in retirement (today’s dollars, before taxes) and still keep your chance of success at your target, 90% by default.' },
     countdown: { title: 'Countdown', text: 'Time until the first year neither of you works full time.' },
